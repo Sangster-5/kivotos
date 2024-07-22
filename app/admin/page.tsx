@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, MouseEventHandler, useEffect, useState } from 'react';
 
 interface User {
     id: number;
@@ -153,7 +153,7 @@ const AdminLoginForm = () => {
                                         <input onChange={handleApplicantNameSearchChange} className='border-2 px-2' type="text" name='search-applicant-name' id='search-applicant-name' placeholder='Search Applicant' />
                                     </div>
                                     <div className="flex flex-row mt-2">
-                                        <RentalApplications statusFilter={applicationProgressFilter} nameFilter={applicantSearchFilter} />
+                                        <RentalApplications statusFilter={applicationProgressFilter} nameFilter={applicantSearchFilter} user={user} />
                                     </div>
                                 </section>
                             )}
@@ -172,6 +172,7 @@ export default AdminLoginForm;
 interface RentalApplicationProps {
     statusFilter: string;
     nameFilter: string;
+    user: User | null;
 }
 
 type RentalApplication = {
@@ -269,7 +270,7 @@ type RentalApplication = {
     approved_admin: Date | null
 }
 
-const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, nameFilter }) => {
+const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, nameFilter, user }) => {
     const [applications, setApplications] = useState([]);
     const [previousFilters, setPreviousFilters] = useState({ nameFilter: "_", statusFilter: "" });
 
@@ -292,6 +293,26 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
             });
     }
 
+    const handleApproval = (event: React.MouseEvent<HTMLButtonElement>) => {
+        const applicationId = event.currentTarget.id;
+
+        fetch("/api/application/approve", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ applicationId })
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                //Handle Approval Confirmation
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    };
+
     return (
         <div>
             {applications.length > 0 && applications.map((application: RentalApplication) => {
@@ -302,12 +323,18 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
                             <p className='flex flex-col'>{application.email_address}</p>
                             <p className='flex flex-col'>{application.telephone_number}</p>
                             <p className='flex flex-col'>{new Date(application.timestamp).toDateString()}</p>
-                            <button className="flex flex-col border-2 px-2">Create Lease</button>
-                        </div>
+                            {(user?.create_leases && application.approved) && (<button className="flex flex-col border-2 px-2">Create Lease</button>)}
+                            {user?.approve_applications && (
+                                <>
+                                    <button id={application.id} onClick={handleApproval} className="flex flex-col border-2 px-2">Approve</button>
+                                    <button id={application.id} className="flex flex-col border-2 px-2">Deny</button>
+                                </>
+                            )}
+                        </div >
                     }
                 </>
             })}
             {/* Show yet to be reviewed ones (filtered by dropdown), search by name of user. */}
-        </div>
+        </div >
     );
 }
