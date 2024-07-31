@@ -4,19 +4,10 @@ import path from "path";
 import pool from '@/lib/db';
 import { cookies } from 'next/headers';
 import { encrypt, decrypt } from '@/lib/encryption-keys';
+import { generateUserID } from '@/lib/generateID';
 
 const uploadDir = path.join(process.cwd(), '/applicant-file-uploads');
 fs.mkdir(uploadDir, { recursive: true });
-
-const generateUserID = (): string => {
-  const characters = '0123456789';
-  let userID = '';
-  for (let i = 0; i < 11; i++) {
-    const randomIndex = Math.floor(Math.random() * characters.length);
-    userID += characters.charAt(randomIndex);
-  }
-  return userID;
-};
 
 export async function POST(request: NextRequest) {
     const formData = await request.formData();

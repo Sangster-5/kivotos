@@ -14,15 +14,16 @@ const SuspenseNode = () => {
 
 const FileViewer: React.FC = () => {
     const searchParams = useSearchParams();
+    const type = searchParams.get('type');
     const filename = searchParams.get('filename');
-    const userID = searchParams.get('userID') as string;
     const [fileUrl, setFileUrl] = useState<string | null>(null);
+
 
     useEffect(() => {
         if (filename) {
             const fetchFileUrl = async () => {
                 try {
-                    const response = await fetch(`/api/files?filename=${encodeURIComponent(filename)}&userID=${encodeURIComponent(userID)}`);
+                    const response = await fetch(`/api/files?type=${type}&filename=${encodeURIComponent(filename)}`);
                     if (!response.ok) {
                         throw new Error('File not found');
                     }
@@ -33,10 +34,9 @@ const FileViewer: React.FC = () => {
                     console.error('Error fetching file:', error);
                 }
             };
-
             fetchFileUrl();
         }
-    }, [filename]);
+    }, [type, filename]);
 
     if (!fileUrl) {
         return <p>Loading...</p>;

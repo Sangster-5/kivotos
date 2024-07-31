@@ -46,8 +46,13 @@ const Home = () => {
   return (
     <div>
       {loggedIn && userDetails ? (
-        <div>
-          <h1 className="text-2xl font-bold mb-2 ml-12 mt-12">Welcome, {userDetails.name}</h1>
+        <div className="ml-12 mt-12">
+          <h1 className="flex flex-row text-2xl font-bold mb-2">Welcome, {userDetails.name}</h1>
+
+          <div className="flex flex-row gap-x-2">
+            <a href="/maintenance" className="border-2 px-4 py-1">Maintenance Request</a>
+            <a href="/maintenance" className="border-2 px-4 py-1">Complaint</a>
+          </div>
 
           {userDetails.tenant ? <h1>Tenant</h1> : <ApplicationView applicationID={userDetails.applicationID} />}
 
@@ -177,18 +182,20 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
       .catch((error) => {
         console.log(error);
       });
-  }, []);
+  }, [applicationID]);
 
 
   return (
     <>
       {application && (
         <>
-          <div className="mx-12">
-            <h1 className="text-2xl font-bold mb-2">Rental Application Form</h1>
-            <p>Submitted on {new Date(application.timestamp).toLocaleDateString()}</p>
-            <p className="mb-4">Incomplete Applications will not be processed.</p>
-            <p className="mb-4">Application Status: {application.rejected ? "Rejected" : (application.approved ? "Approved" : "In Progress")}</p>
+          <div className="flex flex-row mt-10">
+            <div>
+              <h1 className="text-2xl font-bold mb-2">Rental Application Form</h1>
+              <p>Submitted on {new Date(application.timestamp).toLocaleDateString()}</p>
+              <p className="mb-4">Incomplete Applications will not be processed.</p>
+              <p className="mb-4">Application Status: {application.rejected ? "Rejected" : (application.approved ? "Approved" : "In Progress")}</p>
+            </div>
           </div>
           <fieldset id="fieldset-1" className="flex flex-row mb-4 ml-12">
             <div className="flex flex-col mr-4">
@@ -509,7 +516,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
                   <label htmlFor="driversLicenseOrSin">Driver’s License or Social Insurance Number:</label>
                   <input type="checkbox" name="driversLicenseOrSin" checked readOnly />
 
-                  <a className="underline" target="blank" href={`/file?filename=${encodeURIComponent(application.drivers_license_sin)}&userID=${encodeURIComponent(application.user_id)}`}>View File {application.drivers_license_sin}</a>
+                  <a className="underline" target="blank" href={`/file?type=applicant&filename=${encodeURIComponent(application.drivers_license_sin)}`}>View File {application.drivers_license_sin}</a>
                   {/* <input name="driversLicenseOrSinUpload" type="file" value={application.drivers_license_sin} readOnly /> */}
                 </div>
 
@@ -517,14 +524,14 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
                   <label htmlFor="payStubs">Two weeks of the most current pay stubs of each income source listed:</label>
                   <input type="checkbox" name="payStubs" checked readOnly />
 
-                  <a className="underline" target="blank" href={`/file?filename=${encodeURIComponent(application.pay_stubs)}&userID=${encodeURIComponent(application.user_id)}`}>View File {application.pay_stubs}</a>
+                  <a className="underline" target="blank" href={`/file?type=applicant&filename=${encodeURIComponent(application.pay_stubs)}`}>View File {application.pay_stubs}</a>
                   {/* <input name="payStubsUpload" type="file" value={application.pay_stubs} readOnly /> */}
                 </div>
                 <div className="flex items-start items-center gap-x-2">
                   <label htmlFor="taxReturn">If self-employed, most current tax return as proof of income.</label>
                   <input type="checkbox" name="taxReturn" checked readOnly />
 
-                  <a className="underline" target="blank" href={`/file?filename=${encodeURIComponent(application.tax_return)}&userID=${encodeURIComponent(application.user_id)}`}>View File {application.tax_return}</a>
+                  <a className="underline" target="blank" href={`/file?type=applicant&filename=${encodeURIComponent(application.tax_return)}`}>View File {application.tax_return}</a>
                   {/* <input name="taxReturnUpload" type="file" value={application.tax_return} readOnly /> */}
                 </div>
               </div>

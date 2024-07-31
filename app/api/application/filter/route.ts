@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         const values = [adminID];
         const result = await client.query(query, values);
 
-        if(result.rows.length < 1) return NextResponse.json({ message: "Invalid Admin Cookie" }, { status: 401 });
+        if(result.rows.length < 1) return NextResponse.json({ message: "Invalid Admin Cookie" }, { status: 401 }), client.release();
 
         const inProgress = "approved = false AND rejected = false";
         const rejected = "rejected = true";
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
         // return NextResponse.json({ message: "Admin Cookie Validated", application }, { status: 200});
         return NextResponse.json({ message: "Admin Cookie Validated", applications }, { status: 200});
+    } else {
+        return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
-
-    return NextResponse.json({ message: "Received" }, { status: 200 });
 }

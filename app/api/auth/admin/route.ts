@@ -33,7 +33,8 @@ const POST = async (request: NextRequest) => {
                 username: result.rows[0].username,
                 name: result.rows[0].name,
                 approve_applications: result.rows[0].approve_applications,
-                create_leases: result.rows[0].create_leases
+                create_leases: result.rows[0].create_leases,
+                tasks_admin: result.rows[0].tasks_admin
             }
             client.release();
 
@@ -54,7 +55,8 @@ const POST = async (request: NextRequest) => {
                 username: result.rows[0].username,
                 name: result.rows[0].name,
                 approve_applications: result.rows[0].approve_applications,
-                create_leases: result.rows[0].create_leases
+                create_leases: result.rows[0].create_leases,
+                tasks_admin: result.rows[0].tasks_admin
             }
         
             cookieStore.set('adminUsername', encrypt(user.username as string));
