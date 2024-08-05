@@ -24,5 +24,6 @@ export async function POST(req: NextRequest) {
         const result = await client.query(userQuery, userValues);
     }
     
+    client.release();
     return NextResponse.json({ message: "Maintenance request submitted successfully!" }, {status: 200});
 }

@@ -17,16 +17,23 @@ export async function POST(req: NextRequest) {
     const adminQuery = "SELECT * FROM admin WHERE id = $1 AND username = $2 AND password = $3";
     const adminValues = [parseInt(decrypt(cookie.get("adminID") as string)), decrypt(cookie.get("adminUsername") as string), decrypt(cookie.get("adminPassword") as string)];
     const adminResult = await client.query(adminQuery, adminValues);
-    if(adminResult.rowCount === 0) return NextResponse.json({ error: "Unauthorized" }, { status: 401 }), client.release();
+    if(adminResult.rowCount === 0) return client.release(), NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     type Employee = {
         name: string,
         id: number
     }
 
+    const taskID = !data.fromMaintenanceRequest ? generateUserID() : data.maintenanceRequestsID;
     const query = "INSERT INTO tasks (id, status, title, description, assigned_employees, created_by, created_timestamp, category) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)";
-    const values = [generateUserID(), "todo", data.title, data.description, data.employees.map((x: Employee) => x.id), adminResult.rows[0].id, new Date().toISOString(), data.category];
+    const values = [taskID, "todo", data.title, data.description, data.employees.map((x: Employee) => x.id), adminResult.rows[0].id, new Date().toISOString(), data.category];
     const result = await client.query(query, values);
+
+    if(data.fromMaintenanceRequest) {
+        const mQuery = "UPDATE maintenance_requests SET is_task = TRUE WHERE id = $1";
+        const mValues = [data.maintenanceRequestsID];
+        await client.query(mQuery, mValues)
+    }
 
     data.employees.map(async (employee: Employee) => {
         const eID = employee.id;

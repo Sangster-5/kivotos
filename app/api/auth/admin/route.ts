@@ -20,13 +20,13 @@ const POST = async (request: NextRequest) => {
         const password = cookieStore.get('adminPassword');
         const adminID = cookieStore.get('adminID');
         
-        if(!username || !password || !adminID) return NextResponse.json({message: "Invalid Cookie"}, {status: 400}); 
+        if(!username || !password || !adminID) return client.release(), NextResponse.json({message: "Invalid Cookie"}, {status: 400}); 
         
         const values = [decrypt(username.value), decrypt(password.value), decrypt(adminID.value)];
         const query = "SELECT * FROM admin WHERE username = $1 AND password = $2 AND id = $3";
         const result = await client.query(query, values);
     
-        if(result.rows.length < 1) return NextResponse.json({message: "Invalid Cookie",}, {status: 401});
+        if(result.rows.length < 1) return client.release(), NextResponse.json({message: "Invalid Cookie",}, {status: 401});
         if(result.rows[0].id === parseInt(decrypt(adminID.value))) {
             const user = {
                 id: parseInt(result.rows[0].id),

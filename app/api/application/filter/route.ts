@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
         const values = [adminID];
         const result = await client.query(query, values);
 
-        if(result.rows.length < 1) return NextResponse.json({ message: "Invalid Admin Cookie" }, { status: 401 }), client.release();
+        if(result.rows.length < 1) return client.release(), NextResponse.json({ message: "Invalid Admin Cookie" }, { status: 401 });
 
         const inProgress = "approved = false AND rejected = false";
         const rejected = "rejected = true";

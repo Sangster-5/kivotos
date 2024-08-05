@@ -10,13 +10,15 @@ export async function GET(req: NextRequest) {
     const adminUsername = cookie.get("adminUsername");
     const adminPassword = cookie.get("adminPassword");
 
-    const client = await pool.connect();
+
     if(!adminID || !adminUsername || !adminPassword) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    
+    const client = await pool.connect();
     const adminQuery = "SELECT * FROM admin WHERE id = $1 AND username = $2 AND password = $3";
     const adminValues = [parseInt(decrypt(adminID)), decrypt(adminUsername), decrypt(adminPassword)];
     const adminResult = await client.query(adminQuery, adminValues);
     
-    if(adminResult.rowCount === 0) return NextResponse.json({ message: "Unauthorized" }, { status: 401 }), client.release();
+    if(adminResult.rowCount === 0) return client.release(), NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     const leaseQuery = "SELECT * FROM leases";
     const leaseResult = await client.query(leaseQuery);

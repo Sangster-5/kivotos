@@ -11,6 +11,24 @@ interface User {
     tasks_admin: boolean;
 }
 
+type Task = {
+    id: number,
+    status: string,
+    title: string,
+    description: string,
+    assigned_employees: number[],
+    created_by: number,
+    created_timestamp: Date,
+    finished_timestamp: Date | null,
+    category: string
+}
+
+
+type TaskEmployee = {
+    id: string,
+    name: string | null
+}
+
 const AdminLoginForm = () => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<User | null>(null);
@@ -106,7 +124,7 @@ const AdminLoginForm = () => {
         setCreateTaskView(true);
     }
 
-    const [relevantEmployees, setRelevantEmployees] = useState([]);
+    const [relevantEmployees, setRelevantEmployees] = useState<TaskEmployee[]>([]);
     const handleEmployeeSearch = (event: ChangeEvent<HTMLInputElement>) => {
         const data = { name: event.target.value };
         fetch("/api/employee/name", {
@@ -125,11 +143,6 @@ const AdminLoginForm = () => {
                 console.log(error);
             });
     }
-
-    type TaskEmployee = {
-        id: string | null,
-        name: string | null
-    }
     const [assignedEmployees, setAssignedEmployees] = useState<TaskEmployee[]>([]);
     const handleEmployeeAssignation = (event: React.MouseEvent<HTMLDivElement>) => {
         const id = event.currentTarget.id;
@@ -145,20 +158,6 @@ const AdminLoginForm = () => {
     const [ranOnce, setRanOnce] = useState(false);
     const [categories, setCategories] = useState<string[]>([]);
     const [tasks, setTasks] = useState<Task[]>([]);
-
-    const [maintenanceRequests, setMaintenanceRequests] = useState<[]>([]);
-
-    type Task = {
-        id: number,
-        status: string,
-        title: string,
-        description: string,
-        assigned_employees: number[],
-        created_by: number,
-        created_timestamp: Date,
-        finished_timestamp: Date | null,
-        category: string
-    }
 
     const fetchUpdates = (type: String = "both", run: Boolean = false) => {
         const fetchCategories = () => {
@@ -240,11 +239,17 @@ const AdminLoginForm = () => {
     }
 
     const handleSubmitTask = (FormData: FormData) => {
+        const isMaintenanceRequest = FormData.get("isMaintenanceRequest") == "on" ? true : false;
+        let maintenanceRequestsID = null;
+        if (isMaintenanceRequest) maintenanceRequestsID = FormData.get("maintenanceRequestID");
+
         const data = {
             title: FormData.get("title"),
             description: FormData.get("description"),
             category: FormData.get("categorySelect"),
-            employees: assignedEmployees
+            employees: assignedEmployees,
+            fromMaintenanceRequest: isMaintenanceRequest,
+            maintenanceRequestsID: maintenanceRequestsID
         }
 
         fetch("/api/tasks/create", {
@@ -258,7 +263,7 @@ const AdminLoginForm = () => {
             .then((res) => res.json())
             .then((data) => {
                 fetchUpdates("tasks", true);
-                setCreateTaskView(false);
+                setTabView("tasks-tab");
             })
             .catch((error) => {
                 console.log(error);
@@ -269,6 +274,7 @@ const AdminLoginForm = () => {
         const value = event.target.value;
         if (event.target.parentElement && event.target.parentElement.parentElement) {
             const taskID = event.target.parentElement.parentElement.id;
+            const category = event.target.parentElement.children[3].textContent || "";
 
             fetch("/api/tasks/update", {
                 method: "POST",
@@ -276,7 +282,7 @@ const AdminLoginForm = () => {
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ taskID, value, type: "status" })
+                body: JSON.stringify({ taskID, value, type: "status", category: category })
             })
                 .then((res) => res.json())
                 .then((data) => {
@@ -290,7 +296,11 @@ const AdminLoginForm = () => {
         }
     }
 
-
+    const [categoryFilter, setCategoriesFilter] = useState("all");
+    const handleCategorySelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        const value = event.target.value;
+        setCategoriesFilter(value);
+    }
 
     return (
         <>
@@ -336,6 +346,7 @@ const AdminLoginForm = () => {
                             {user.tasks_admin && <button id="requests-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Incoming Requests</button>}
                             {user.tasks_admin && <button id="complaints-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Complaints</button>}
                             {user.tasks_admin && <button id="leases-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Leases</button>}
+                            {user.tasks_admin && <button id="unit-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Units</button>}
                         </div>
                         <div className="flex flex-row">
                             {/* Make it so other employees only see thier own tasks but tasks admins see all */}
@@ -347,7 +358,7 @@ const AdminLoginForm = () => {
                                         </div>
                                         <div className="flex flex-row gap-x-2 mb-4">
                                             <button className='bg-white px-4 py-2 rounded-lg shadow-md' onClick={handleCreateTaskClick}>Create Task</button>
-                                            <form action={handleAddCategory} method="POST" className="relative">
+                                            <form action={handleAddCategory} className="relative">
                                                 <input type="text" name="createCategory" placeholder="New Category" className="bg-white px-10 py-2 rounded-lg shadow-md"></input>
                                                 <button className="absolute hover:cursor-pointer inset-y-0 left-0 flex items-center pl-3">
                                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -355,7 +366,8 @@ const AdminLoginForm = () => {
                                                     </svg>
                                                 </button>
                                             </form>
-                                            <select className='bg-white px-4 py-2 rounded-lg shadow-md' name="categorySelect" id="categorySelect">
+                                            <select onChange={handleCategorySelectChange} className='bg-white px-4 py-2 rounded-lg shadow-md' name="categorySelect" id="categorySelect">
+                                                <option value="all">All Categories</option>
                                                 {categories.map((category, index) => (
                                                     <option key={index} value={category}>
                                                         {category}
@@ -384,6 +396,7 @@ const AdminLoginForm = () => {
                                                     <div className="flex flex-col w-1/3">
                                                         {tasks.map((task, index) => {
                                                             if (task.status != "todo") return;
+                                                            if (categoryFilter != "all" && task.category != categoryFilter) return;
                                                             return (
                                                                 <div key={index} id={task.id.toString()} className='flex flex-row'>
                                                                     <div className="flex flex-col">
@@ -392,8 +405,8 @@ const AdminLoginForm = () => {
                                                                         <p className='flex flex-row'>{task.assigned_employees}</p>
                                                                         <p className='flex flex-row'>{task.category}</p>
                                                                         <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                                                        <select onChange={handleSelectChange} name="statusSelector" className='rounded-md flex flex-row'>
-                                                                            <option value="todo" selected>Todo</option>
+                                                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
+                                                                            <option value="todo">Todo</option>
                                                                             <option value="in-progress">In Progress</option>
                                                                             <option value="completed">Completed</option>
                                                                         </select>
@@ -404,6 +417,7 @@ const AdminLoginForm = () => {
                                                     <div className="flex flex-col w-1/3">
                                                         {tasks.map((task, index) => {
                                                             if (task.status != "in-progress") return;
+                                                            if (categoryFilter != "all" && task.category != categoryFilter) return;
                                                             return (
                                                                 <div key={index} id={task.id.toString()} className='flex flex-row'>
                                                                     <div className="flex flex-col">
@@ -412,8 +426,8 @@ const AdminLoginForm = () => {
                                                                         <p className='flex flex-row'>{task.assigned_employees}</p>
                                                                         <p className='flex flex-row'>{task.category}</p>
                                                                         <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                                                        <select onChange={handleSelectChange} name="statusSelector" className='rounded-md'>
-                                                                            <option value="in-progress" selected>In Progress</option>
+                                                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md'>
+                                                                            <option value="in-progress">In Progress</option>
                                                                             <option value="completed">Completed</option>
                                                                             <option value="todo">Todo</option>
                                                                         </select>
@@ -425,6 +439,7 @@ const AdminLoginForm = () => {
                                                     <div className="flex flex-col w-1/3">
                                                         {tasks.map((task, index) => {
                                                             if (task.status != "completed") return;
+                                                            if (categoryFilter != "all" && task.category != categoryFilter) return;
                                                             return (
                                                                 <div key={index} id={task.id.toString()} className='flex flex-row'>
                                                                     <div className="flex flex-col">
@@ -433,8 +448,8 @@ const AdminLoginForm = () => {
                                                                         <p className='flex flex-row'>{task.assigned_employees}</p>
                                                                         <p className='flex flex-row'>{task.category}</p>
                                                                         <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                                                        <select onChange={handleSelectChange} name="statusSelector" className='rounded-md'>
-                                                                            <option value="completed" selected>Completed</option>
+                                                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md'>
+                                                                            <option value="completed">Completed</option>
                                                                             <option value="todo">Todo</option>
                                                                             <option value="in-progress">In Progress</option>
                                                                         </select>
@@ -477,7 +492,7 @@ const AdminLoginForm = () => {
                                                             {relevantEmployees.length == 0 && (
                                                                 <h1>No Results</h1>
                                                             )}
-                                                            {relevantEmployees.length > 0 && relevantEmployees.map((employee: any, index) => {
+                                                            {relevantEmployees.length > 0 && relevantEmployees.map((employee: TaskEmployee, index) => {
                                                                 return (
                                                                     <div className='bg-white border-2 border-gray-100 px-4 py-2 rounded-sm flex flex-row' id={employee.id} key={index} onClick={handleEmployeeAssignation}>
                                                                         <p id='employee-name' className='flex flex-col w-1/2'>{employee.name}</p>
@@ -507,8 +522,8 @@ const AdminLoginForm = () => {
                             {(tabView == "applications-tab" && user.approve_applications) && (
                                 <section className='flex flex-col'>
                                     <div className='flex flex-row gap-x-2'>
-                                        <select onChange={handleApplicantStatusFilterChange} className='border-2 px-2' name="filter-applicant-status" id="filter-applicant-status">
-                                            <option selected value="In Progress">In Progress</option>
+                                        <select onChange={handleApplicantStatusFilterChange} defaultValue="In Progress" className='border-2 px-2' name="filter-applicant-status" id="filter-applicant-status">
+                                            <option value="In Progress">In Progress</option>
                                             <option value="Accepted">Accepted</option>
                                             <option value="Rejected">Rejected</option>
                                         </select>
@@ -525,7 +540,7 @@ const AdminLoginForm = () => {
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Incoming Requests</h1>
                                         </div>
-                                        <MaintenanceRequests />
+                                        <MaintenanceRequests user={user} categories={categories} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleSubmitTask={handleSubmitTask} />
                                     </div>
                                 </section>
                             )}
@@ -549,6 +564,16 @@ const AdminLoginForm = () => {
                                     </div>
                                 </section>
                             )}
+                            {(tabView == "unit-tab" && user.tasks_admin) && (
+                                <section className='w-full'>
+                                    <div className="bg-gray-100 p-8 flex flex-col">
+                                        <div className="flex flex-row">
+                                            <h1 className="text-2xl font-bold mb-8">Units</h1>
+                                        </div>
+                                        <Units />
+                                    </div>
+                                </section>
+                            )}
                         </div>
                     </div>
                 </>
@@ -561,6 +586,14 @@ const AdminLoginForm = () => {
 };
 
 export default AdminLoginForm;
+
+const Units: React.FC = () => {
+    return (
+        <h1>Units</h1>
+    )
+}
+
+// Convert to tasks
 type Complaint = {
     id: number;
     type: string;
@@ -613,14 +646,14 @@ const Complaints: React.FC = () => {
             <div className="flex flex-row gap-x-2">
                 <div className="flex flex-col w-1/3">
                     <h1 className="flex flex-row font-bold mb-4">Pending</h1>
-                    {complaints.length > 0 && complaints.map((request: Complaint, index) => {
-                        if (request.status == "pending" && (typeFilter == "all" ? true : request.type == typeFilter)) {
+                    {complaints.length > 0 && complaints.map((complaint: Complaint, index) => {
+                        if (complaint.status == "pending" && (typeFilter == "all" ? true : complaint.type == typeFilter)) {
                             return (
                                 <div className="flex flex-row gap-x-2" key={index}>
                                     <div className="flex flex-col">
-                                        <h1>{request.details}</h1>
-                                        <h1>{new Date(request.timestamp).toLocaleString()}</h1>
-                                        {typeFilter == "all" && <h1>{request.type}</h1>}
+                                        <h1>{complaint.details}</h1>
+                                        <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
+                                        {typeFilter == "all" && <h1>{complaint.type}</h1>}
                                     </div>
                                 </div>
                             )
@@ -629,14 +662,14 @@ const Complaints: React.FC = () => {
                 </div>
                 <div className="flex flex-col w-1/3">
                     <h1 className="flex flex-row font-bold mb-4">Reviewed</h1>
-                    {complaints.length > 0 && complaints.map((request: Complaint, index) => {
-                        if (request.status == "reviewed" && (typeFilter == "all" ? true : request.type == typeFilter)) {
+                    {complaints.length > 0 && complaints.map((complaint: Complaint, index) => {
+                        if (complaint.status == "reviewed" && (typeFilter == "all" ? true : complaint.type == typeFilter)) {
                             return (
                                 <div className="flex flex-row gap-x-2" key={index}>
                                     <div className="flex flex-col">
-                                        <h1>{request.details}</h1>
-                                        <h1>{new Date(request.timestamp).toLocaleString()}</h1>
-                                        {typeFilter == "all" && <h1>{request.type}</h1>}
+                                        <h1>{complaint.details}</h1>
+                                        <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
+                                        {typeFilter == "all" && <h1>{complaint.type}</h1>}
                                     </div>
                                 </div>
                             )
@@ -645,14 +678,14 @@ const Complaints: React.FC = () => {
                 </div>
                 <div className="flex flex-col w-1/3">
                     <h1 className="flex flex-row font-bold mb-4">Completed</h1>
-                    {complaints.length > 0 && complaints.map((request: Complaint, index) => {
-                        if (request.status == "resolved" && (typeFilter == "all" ? true : request.type == typeFilter)) {
+                    {complaints.length > 0 && complaints.map((complaint: Complaint, index) => {
+                        if (complaint.status == "resolved" && (typeFilter == "all" ? true : complaint.type == typeFilter)) {
                             return (
                                 <div className="flex flex-row gap-x-2" key={index}>
                                     <div className="flex flex-col">
-                                        <h1>{request.details}</h1>
-                                        <h1>{new Date(request.timestamp).toLocaleString()}</h1>
-                                        {typeFilter == "all" && <h1>{request.type}</h1>}
+                                        <h1>{complaint.details}</h1>
+                                        <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
+                                        {typeFilter == "all" && <h1>{complaint.type}</h1>}
                                     </div>
                                 </div>
                             )
@@ -664,18 +697,31 @@ const Complaints: React.FC = () => {
     )
 }
 
+//Finish converting to tasks
 type MaintenanceRequest = {
-    created_timestamp: Date,
-    date_time: Date,
+    created_timestamp: Date;
+    date_time: Date;
     description: string,
-    id: number,
-    permission: boolean,
-    status: string,
-    tenant_name: string,
-    unit: string
+    id: number;
+    permission: boolean;
+    status: string;
+    tenant_name: string;
+    unit: string;
+    is_task: boolean;
+    property: string;
 }
 
-const MaintenanceRequests: React.FC = () => {
+interface MaintenanceRequestProps {
+    user: User;
+    categories: string[];
+    handleEmployeeSearch: (event: ChangeEvent<HTMLInputElement>) => void;
+    relevantEmployees: TaskEmployee[];
+    handleEmployeeAssignation: (event: React.MouseEvent<HTMLDivElement>) => void;
+    assignedEmployees: TaskEmployee[];
+    handleSubmitTask: (FormData: FormData) => void;
+}
+
+const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categories, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleSubmitTask }) => {
     const [ranOnce, setRanOnce] = useState(false);
     const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
     const fetchMaintenanceRequests = (runAnyways: boolean = false) => {
@@ -699,71 +745,151 @@ const MaintenanceRequests: React.FC = () => {
 
     useEffect(fetchMaintenanceRequests, [ranOnce, maintenanceRequests, setMaintenanceRequests]);
 
+    const [requestToTaskForm, setRequestToTaskForm] = useState(false);
+    const [taskData, setTaskData] = useState<Task | null>(null);
+    const handleMaintenanceRequestToTask = (event: React.MouseEvent<HTMLButtonElement>) => {
+        // Include Phone Numbers in future
+        const id = event.currentTarget.id;
+        const request = event.currentTarget.parentElement;
+        const dateText = request?.children[4].textContent ?? "";
+        const property = (request?.children[3].textContent ?? "") == "theArborVictorianLiving" ? "The Abor Victorian Living" : "Vitalia Courtyard Properties";
+        const date = new Date(dateText);
+        const newAssignedEmployees = assignedEmployees.map(employee => parseInt(employee.id));
+        const taskData: Task = {
+            id: parseInt(id),
+            status: "todo",
+            title: `${request?.children[0].textContent || ""} - ${request?.children[1].textContent || ""}`,
+            description: `-${property}-\n${request?.children[2].textContent || ""}`,
+            assigned_employees: newAssignedEmployees,
+            created_by: user.id,
+            created_timestamp: date,
+            finished_timestamp: null,
+            category: "Maintenance"
+        }
+        setTaskData(taskData);
+        setRequestToTaskForm(true);
+
+    }
+
     return (<div className="flex flex-row gap-x-2">
-        <div className="flex flex-col w-1/3">
-            <h1 className="flex flex-row font-bold mb-4">Todo</h1>
-            {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
-                if (request.status == "todo") {
-                    return (
-                        <div className="flex flex-row gap-x-2" key={index}>
-                            <div className="flex flex-col">
-                                <h1>{request.tenant_name}</h1>
-                                <h1>{request.unit}</h1>
-                                <p>{request.description}</p>
-                                <h1>{new Date(request.date_time).toLocaleDateString()}</h1>
-                                <h1>{new Date(request.date_time).toLocaleTimeString()}</h1>
-                                <h1>{request.tenant_name}</h1>
-                                <h1>{request.unit}</h1>
-                                <p>{request.description}</p>
-                            </div>
+        {/* Post task data then ensure all data is sent that correlates to the maintenance (maybe id and date created) */}
+        {requestToTaskForm && (
+            <form action={handleSubmitTask}>
+                <input className="hidden" type="checkbox" name='isMaintenanceRequest' readOnly checked />
+                {taskData && <input type="number" name='maintenanceRequestID' className='hidden' readOnly defaultValue={taskData.id} />}
+                <div className="flex flex-row gap-x-2">
+                    <div className="flex flex-col w-1/2">
+                        <label htmlFor="title">Task Title</label>
+                        <input name="title" type="text" defaultValue={taskData?.title} />
+                    </div>
+                    <div className="flex flex-col w-1/2">
+                        <label htmlFor="categorySelect">Select Category</label>
+                        {<select name="categorySelect" defaultValue={taskData?.category} className='h-full' id="categorySelect">
+                            {categories.map((category, index) => (
+                                <option key={index} value={category}>
+                                    {category}
+                                </option>
+                            ))}
+                        </select>}
+                    </div>
+                </div>
+                <div className="flex flex-row w-full mt-4">
+                    <textarea name="description" id="description" defaultValue={taskData?.description} className='w-full' rows={10}></textarea>
+                </div>
+                <div className="flex flex-row mt-4 gap-x-4">
+                    <div className="flex flex-col w-1/2">
+                        <label htmlFor="employeeSearch">Assign Employees</label>
+                        <input type="text" name='employeeSearch' className='px-4 py-2' onChange={handleEmployeeSearch} />
+
+                        <div id='employeeRender' className='mt-4'>
+                            {relevantEmployees.length == 0 && (
+                                <h1>No Results</h1>
+                            )}
+                            {relevantEmployees.length > 0 && relevantEmployees.map((employee: any, index) => {
+                                return (
+                                    <div className='bg-white border-2 border-gray-100 px-4 py-2 rounded-sm flex flex-row' id={employee.id} key={index} onClick={handleEmployeeAssignation}>
+                                        <p id='employee-name' className='flex flex-col w-1/2'>{employee.name}</p>
+                                        <p className='border-2 rounded-md flex flex-col w-1/2 text-center hover:cursor-pointer'>Assign</p>
+                                    </div>
+                                )
+                            })}
                         </div>
-                    )
-                }
-            })}
-        </div>
-        <div className="flex flex-col w-1/3">
-            <h1 className="flex flex-row font-bold mb-4">In Progress</h1>
-            {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
-                if (request.status == "in-progress") {
-                    return (
-                        <div className="flex flex-row gap-x-2" key={index}>
-                            <div className="flex flex-col">
-                                <h1>{request.tenant_name}</h1>
-                                <h1>{request.unit}</h1>
-                                <p>{request.description}</p>
-                                <h1>{new Date(request.date_time).toLocaleDateString()}</h1>
-                                <h1>{new Date(request.date_time).toLocaleTimeString()}</h1>
-                                <h1>{request.tenant_name}</h1>
-                                <h1>{request.unit}</h1>
-                                <p>{request.description}</p>
-                            </div>
-                        </div>
-                    )
-                }
-            })}
-        </div>
-        <div className="flex flex-col w-1/3">
-            <h1 className="flex flex-row font-bold mb-4">Completed</h1>
-            {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
-                if (request.status == "completed") {
-                    return (
-                        <div className="flex flex-row gap-x-2" key={index}>
-                            <div className="flex flex-col">
-                                <h1>{request.tenant_name}</h1>
-                                <h1>{request.unit}</h1>
-                                <p>{request.description}</p>
-                                <h1>{new Date(request.date_time).toLocaleDateString()}</h1>
-                                <h1>{new Date(request.date_time).toLocaleTimeString()}</h1>
-                                <h1>{request.tenant_name}</h1>
-                                <h1>{request.unit}</h1>
-                                <p>{request.description}</p>
-                            </div>
-                        </div>
-                    )
-                }
-            })}
-        </div>
-    </div>)
+                    </div>
+                    <div className="flex flex-col w-1/2">
+                        <h1>Assigned Employees</h1>
+                        {assignedEmployees.length > 0 && (
+                            assignedEmployees.map((employee: TaskEmployee, index) => {
+                                return <h1 key={index}>{employee.name} - {employee.id}</h1>
+                            })
+                        )}
+                    </div>
+                </div>
+                <div className="flex flex-row">
+                    <button type="submit" className='border-2 px-4 py-2 mt-4'>Submit Task</button>
+                </div>
+            </form>
+        )
+        }
+        {
+            !requestToTaskForm && <>
+                <div className="flex flex-col w-1/3">
+                    <h1 className="flex flex-row font-bold mb-4">Todo</h1>
+                    {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
+                        if (request.status == "todo") {
+                            return (
+                                <div className="flex flex-row gap-x-2" key={index}>
+                                    <div className="flex flex-col">
+                                        <h1 id='tenant-name'>{request.tenant_name}</h1>
+                                        <h1 id='unit'>{request.unit}</h1>
+                                        <p id='description'>{request.description}</p>
+                                        <p id='property'>{request.property}</p>
+                                        <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
+                                        {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })}
+                </div>
+                <div className="flex flex-col w-1/3">
+                    <h1 className="flex flex-row font-bold mb-4">In Progress</h1>
+                    {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
+                        if (request.status == "in-progress") {
+                            return (
+                                <div className="flex flex-row gap-x-2" key={index}>
+                                    <div className="flex flex-col">
+                                        <h1 id='tenant-name'>{request.tenant_name}</h1>
+                                        <h1 id='unit'>{request.unit}</h1>
+                                        <p id='description'>{request.description}</p>
+                                        <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
+                                        {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })}
+                </div>
+                <div className="flex flex-col w-1/3">
+                    <h1 className="flex flex-row font-bold mb-4">Completed</h1>
+                    {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
+                        if (request.status == "completed") {
+                            return (
+                                <div className="flex flex-row gap-x-2" key={index}>
+                                    <div className="flex flex-col">
+                                        <h1 id='tenant-name'>{request.tenant_name}</h1>
+                                        <h1 id='unit'>{request.unit}</h1>
+                                        <p id='description'>{request.description}</p>
+                                        <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
+                                        {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })}
+                </div>
+            </>
+        }
+    </div >)
 }
 
 type Lease = {
@@ -805,15 +931,16 @@ const Leases: React.FC = () => {
         <>
             {leases.length > 0 && leases.map((lease: Lease, index) => {
                 return (
-                    // Seperate by timeframe until expiration for ongoing leases
+                    // Seperate by timeframe until expiration for ongoing leases (3months, 1month maybe 6?)
                     <>
                         <div key={index} className="flex flex-row">
-                            <select name="leaseTimeFrame" id="leaseTimeFrame" className='mb-4 px-4 py-1 rounded-md'>
+                            <select name="leaseTimeFrame" id="leaseTimeFrame" defaultValue="ongoing" className='mb-4 px-4 py-1 rounded-md'>
                                 <option value="all">All</option>
-                                <option value="ongoing" selected>Ongoing</option>
+                                <option value="ongoing">Ongoing</option>
                                 <option value="expired">Expired</option>
                             </select>
                         </div >
+                        <div className="flex flex-row font-bold mb-2">1 Month</div>
                         <div className="flex flex-row gap-x-2">
                             <h1>{lease.unit}</h1>
                             <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
@@ -1062,7 +1189,7 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
                 (createLease && leaseForm != 0) && (
                     <div className="bg-gray-100 p-8">
                         <h1 className="text-2xl font-bold mb-8">Lease Agreement Form</h1>
-                        <form id='leaseCreatorForm' action={handleCreateLeaseSubmit} method="POST" className="bg-white p-6 rounded-lg shadow-md">
+                        <form id='leaseCreatorForm' action={handleCreateLeaseSubmit} className="bg-white p-6 rounded-lg shadow-md">
                             <select className='flex flex-row mb-4 bg-gray-100 py-1 px-2 rounded-md' name="propertySelector" id="propertySelector">
                                 <option value="theArborVictorianLiving">The Arbor Victorian Living LTD</option>
                                 <option value="arborVitaliaCourtyardProperties">The Arbor Vitalia Courtyard Properties LTD</option>

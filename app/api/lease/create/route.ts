@@ -21,19 +21,19 @@ export async function POST(req: NextRequest) {
     const adminPassword = cookie.get("adminPassword");
 
     const client = await pool.connect();
-    if(!adminID || !adminUsername || !adminPassword) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if(!adminID || !adminUsername || !adminPassword) return client.release(), NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     const adminQuery = "SELECT * FROM admin WHERE id = $1 AND username = $2 AND password = $3";
     const adminValues = [parseInt(decrypt(adminID)), decrypt(adminUsername), decrypt(adminPassword)];
     const adminResult = await client.query(adminQuery, adminValues);
     
-    if(adminResult.rowCount === 0) return NextResponse.json({ message: "Unauthorized" }, { status: 401 }), client.release();
+    if(adminResult.rowCount === 0) return client.release(), NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
 
     const query = "SELECT * FROM applications WHERE id = $1";
     const values = [data.applicationId];
     const result = (await client.query(query, values));
     
-    if(result.rowCount === 0) return NextResponse.json({ message: "Application not found" }, { status: 404 }), client.release();;
+    if(result.rowCount === 0) return client.release(), NextResponse.json({ message: "Application not found" }, { status: 404 });
     const application = result.rows[0];
 
     await client.query("UPDATE applications SET lease_created = $1 WHERE id = $2", [true, data.applicationId]);
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     await workbook.xlsx.readFile(filepath);
 
     const worksheet = workbook.getWorksheet(1);
-    if(!worksheet) return NextResponse.json({ message: "Error processing the Excel file" }, { status: 500 }), client.release();
+    if(!worksheet) return client.release(), NextResponse.json({ message: "Error processing the Excel file" }, { status: 500 });
 
     let masterUnitNumber;
     const makeVitalia = () => {
@@ -56,7 +56,9 @@ export async function POST(req: NextRequest) {
         worksheet.getCell("T47").value = masterUnitNumber;
 
         //Section 3
-        if (1011 <= data.unitNumber && data.unitNumber <= 1152) {
+        //Check for Vitalia
+
+        if (1011 <= data.unitNumber && data.unitNumber <= 1152) { //Victorian Living
             //Townhouse
             worksheet.getCell("B51").value = "Townhouse";
             worksheet.getCell("B47").value = "Vitalia";

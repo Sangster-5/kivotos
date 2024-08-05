@@ -33,7 +33,7 @@ const MaintenancePage = () => {
 
     return (
         <div className="m-12">
-            <h1 className="flex flex-row text-2xl font-bold">Maintenance Request</h1>
+            <h1 className="flex flex-row text-2xl font-bold">Maintenance Request (Add Phone Number)</h1>
 
             {!submitted && (
                 <form action={handleMaintenanceRequestSubmition} className="w-1/2">

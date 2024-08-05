@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     if(req.cookies) {
         const cookies = parseCookie(req.cookies.toString());
 
-        if(!cookies.get("userID")) return;
+        if(!cookies.get("userID")) return client.release();
 
         const userID = cookies.get("userID");
         const userQuery = "UPDATE users SET complaints = array_append(complaints, $1) WHERE id = $2";
