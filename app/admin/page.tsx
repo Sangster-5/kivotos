@@ -540,7 +540,7 @@ const AdminLoginForm = () => {
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Incoming Requests</h1>
                                         </div>
-                                        <MaintenanceRequests user={user} categories={categories} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleSubmitTask={handleSubmitTask} />
+                                        <MaintenanceRequests user={user} categories={categories} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleSubmitTask={handleSubmitTask} fetchUpdates={fetchUpdates} />
                                     </div>
                                 </section>
                             )}
@@ -603,6 +603,7 @@ type Complaint = {
     action_timestamp: Date;
 }
 
+//Consider converting to tasks?
 const Complaints: React.FC = () => {
     const [ranOnce, setRanOnce] = useState(false);
     const [complaints, setComplaints] = useState<Complaint[]>([]);
@@ -653,7 +654,7 @@ const Complaints: React.FC = () => {
                                     <div className="flex flex-col">
                                         <h1>{complaint.details}</h1>
                                         <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
-                                        {typeFilter == "all" && <h1>{complaint.type}</h1>}
+                                        {typeFilter == "all" && <h1>{complaint.type.charAt(0).toUpperCase() + complaint.type.slice(1)}</h1>}
                                     </div>
                                 </div>
                             )
@@ -697,7 +698,6 @@ const Complaints: React.FC = () => {
     )
 }
 
-//Finish converting to tasks
 type MaintenanceRequest = {
     created_timestamp: Date;
     date_time: Date;
@@ -719,13 +719,15 @@ interface MaintenanceRequestProps {
     handleEmployeeAssignation: (event: React.MouseEvent<HTMLDivElement>) => void;
     assignedEmployees: TaskEmployee[];
     handleSubmitTask: (FormData: FormData) => void;
+    fetchUpdates: (type: String, run: Boolean) => void;
 }
 
-const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categories, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleSubmitTask }) => {
+const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categories, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleSubmitTask, fetchUpdates }) => {
     const [ranOnce, setRanOnce] = useState(false);
     const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
-    const fetchMaintenanceRequests = (runAnyways: boolean = false) => {
-        if (ranOnce) return;
+
+    const fetchMaintenanceRequests = (runAnyways: Boolean = false) => {
+        if (ranOnce && (ranOnce && !runAnyways)) return;
         fetch("/api/maintenance/get", {
             method: "GET",
             credentials: "include",
@@ -748,7 +750,6 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
     const [requestToTaskForm, setRequestToTaskForm] = useState(false);
     const [taskData, setTaskData] = useState<Task | null>(null);
     const handleMaintenanceRequestToTask = (event: React.MouseEvent<HTMLButtonElement>) => {
-        // Include Phone Numbers in future
         const id = event.currentTarget.id;
         const request = event.currentTarget.parentElement;
         const dateText = request?.children[4].textContent ?? "";
@@ -768,11 +769,33 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
         }
         setTaskData(taskData);
         setRequestToTaskForm(true);
+    }
 
+    const handleSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        const value = event.currentTarget.value;
+
+        if (event.currentTarget.parentElement) {
+            const requestID = event.currentTarget.parentElement.id;
+            fetch("/api/tasks/update", {
+                method: "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ taskID: requestID, value, type: "status", source: "maintenance" })
+            })
+                .then((res) => res.json())
+                .then((data) => {
+                    fetchMaintenanceRequests(true);
+                    fetchUpdates("tasks", true);
+                })
+                .catch((error) => {
+                    console.log(error);
+                });
+        }
     }
 
     return (<div className="flex flex-row gap-x-2">
-        {/* Post task data then ensure all data is sent that correlates to the maintenance (maybe id and date created) */}
         {requestToTaskForm && (
             <form action={handleSubmitTask}>
                 <input className="hidden" type="checkbox" name='isMaintenanceRequest' readOnly checked />
@@ -838,13 +861,18 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
                         if (request.status == "todo") {
                             return (
                                 <div className="flex flex-row gap-x-2" key={index}>
-                                    <div className="flex flex-col">
+                                    <div id={request.id.toString()} className="flex flex-col">
                                         <h1 id='tenant-name'>{request.tenant_name}</h1>
                                         <h1 id='unit'>{request.unit}</h1>
                                         <p id='description'>{request.description}</p>
                                         <p id='property'>{request.property}</p>
                                         <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
                                         {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
+                                            <option value="todo">Todo</option>
+                                            <option value="in-progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
                                     </div>
                                 </div>
                             )
@@ -857,12 +885,17 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
                         if (request.status == "in-progress") {
                             return (
                                 <div className="flex flex-row gap-x-2" key={index}>
-                                    <div className="flex flex-col">
+                                    <div id={request.id.toString()} className="flex flex-col">
                                         <h1 id='tenant-name'>{request.tenant_name}</h1>
                                         <h1 id='unit'>{request.unit}</h1>
                                         <p id='description'>{request.description}</p>
                                         <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
                                         {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md flex flex-row'>
+                                            <option value="todo">Todo</option>
+                                            <option value="in-progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
                                     </div>
                                 </div>
                             )
@@ -875,12 +908,17 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
                         if (request.status == "completed") {
                             return (
                                 <div className="flex flex-row gap-x-2" key={index}>
-                                    <div className="flex flex-col">
+                                    <div id={request.id.toString()} className="flex flex-col">
                                         <h1 id='tenant-name'>{request.tenant_name}</h1>
                                         <h1 id='unit'>{request.unit}</h1>
                                         <p id='description'>{request.description}</p>
                                         <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
                                         {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md flex flex-row'>
+                                            <option value="todo">Todo</option>
+                                            <option value="in-progress">In Progress</option>
+                                            <option value="completed">Completed</option>
+                                        </select>
                                     </div>
                                 </div>
                             )
@@ -940,13 +978,18 @@ const Leases: React.FC = () => {
                                 <option value="expired">Expired</option>
                             </select>
                         </div >
-                        <div className="flex flex-row font-bold mb-2">1 Month</div>
                         <div className="flex flex-row gap-x-2">
                             <h1>{lease.unit}</h1>
                             <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
                             <h1>{lease.rental_amount}</h1>
                             <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
                             <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                            {/* Make button to set lease as signed, attach to unit in table
+                                * Add download lease button here as well, copy from applications
+                                * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
+                                * Store application ID (maybe)
+                                * Sort by how closre to expiration, maybe filter by property
+                            */}
                         </div>
                     </>
                 )
@@ -1094,7 +1137,22 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
         })
             .then((res) => res.json())
             .then((data) => {
-                //Handle Approval Confirmation
+                setPreviousFilters({ nameFilter, statusFilter });
+                fetch("/api/application/filter", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ statusFilter, nameFilter })
+                })
+                    .then((res) => res.json())
+                    .then((data) => {
+                        setApplications(data.applications);
+                    })
+                    .catch((error) => {
+                        console.log(error);
+                    });
             })
             .catch((error) => {
                 console.log(error);
