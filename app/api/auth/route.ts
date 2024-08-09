@@ -4,6 +4,12 @@ import { cookies } from 'next/headers';
 import { encrypt, decrypt} from '@/lib/encryption-keys';
 import readStream from '@/lib/read-stream';
 
+const deleteCookies = (cookieStore: any) => {
+  cookieStore.delete('email');
+  cookieStore.delete('password');
+  cookieStore.delete('userID');
+}
+
 export async function POST(request: NextRequest) {
   if(!request.body) return NextResponse.json({message: "Invalid Credentials"}, {status: 400}); 
   const data = JSON.parse(await readStream(request.body));
@@ -21,6 +27,14 @@ export async function POST(request: NextRequest) {
     const values = [decrypt(email.value), decrypt(password.value), decrypt(userID.value)];
     const query = "SELECT * FROM users WHERE email = $1 AND password = $2 AND id = $3";
     const result = await client.query(query, values);
+
+    if(result.rowCount === 0)  {
+      client.release(), 
+
+      deleteCookies(cookieStore);
+
+      return NextResponse.json({message: "Invalid Cookie"}, {status: 400}); 
+    }
 
     if(result.rows[0].id === decrypt(userID.value)) {
       const user = {

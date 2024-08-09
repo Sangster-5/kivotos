@@ -35,11 +35,12 @@ const Home = () => {
     })
       .then((res) => res.json())
       .then((data) => {
+        if (data.message === "Invalid Cookie") return location.replace("/login");
         userDetails = data.user;
         setLoggedIn(true);
       })
       .catch((error) => {
-        console.log(error);
+        console.log(error)
       });
   });
 
@@ -95,26 +96,6 @@ interface Application {
   monthly_rental: number;
   name: string;
   number_of_occupants: number;
-  occupant_1_age: number;
-  occupant_1_email: string;
-  occupant_1_name: string;
-  occupant_1_relationship: string;
-  occupant_2_age: number;
-  occupant_2_email: string;
-  occupant_2_name: string;
-  occupant_2_relationship: string;
-  occupant_3_age: number;
-  occupant_3_email: string;
-  occupant_3_name: string;
-  occupant_3_relationship: string;
-  occupant_4_age: number;
-  occupant_4_email: string;
-  occupant_4_name: string;
-  occupant_4_relationship: string;
-  occupant_5_age: number;
-  occupant_5_email: string;
-  occupant_5_name: string;
-  occupant_5_relationship: string;
   pay_stubs: string;
   permission_contact_references: boolean;
   personal_ref_address: string;
@@ -136,24 +117,6 @@ interface Application {
   second_choice_unit: string;
   tax_return: string;
   telephone_number: string;
-  tenant_1_address: string;
-  tenant_1_annual_income: number;
-  tenant_1_bank: string;
-  tenant_1_branch: string;
-  tenant_1_business_telephone: string;
-  tenant_1_employer: string;
-  tenant_1_employment_term: string;
-  tenant_1_full_or_part_time: string;
-  tenant_1_occupation: string;
-  tenant_2_address: string;
-  tenant_2_annual_income: number | string;
-  tenant_2_bank: string;
-  tenant_2_branch: string;
-  tenant_2_business_telephone: string;
-  tenant_2_employed_by: string;
-  tenant_2_full_or_part_time: string;
-  tenant_2_how_long: string;
-  tenant_2_occupation: string;
   timestamp: string;
   user_id: string;
   vehicle_1: string;
@@ -161,6 +124,29 @@ interface Application {
   vehicle_3: string;
   approved: boolean;
   rejected: boolean;
+  tenants: Tenant[];
+  occupants: Occupant[];
+  property: string;
+}
+
+type Occupant = {
+  tenantName: string;
+  tenantRelationship: string;
+  tenantAge: number;
+  tenantEmail: string;
+}
+
+type Tenant = {
+  tenantFullname: string;
+  tenantAnnualIncome: number;
+  tenantBank: string;
+  tenantBankBranch: string;
+  tenantBusinessTelephone: string;
+  tenantEmployer: string;
+  tenantEmployerAddress: string;
+  tenantEmploymentDuration: string;
+  tenantEmploymentType: string;
+  tenantOccupation: string;
 }
 
 const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
@@ -197,7 +183,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               <p className="mb-4">Application Status: {application.rejected ? "Rejected" : (application.approved ? "Approved" : "In Progress")}</p>
             </div>
           </div>
-          <fieldset id="fieldset-1" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-1" className="flex flex-row mb-4">
             <div className="flex flex-col mr-4">
               <label htmlFor="name" className="mb-2">Name:</label>
               <input type="text" id="name" name="name" className="border-2 p-2" value={application.name} readOnly />
@@ -219,6 +205,12 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
 
               <label htmlFor="rentalDuration" className="mb-2">How long do you plan to live in the rental unit?</label>
               <input type="text" id="rentalDuration" name="rentalDuration" className="border-2 p-2" value={application.intended_rental_duration} readOnly />
+
+              <label htmlFor="property">Select Property</label>
+              <select name="property" id="property" className="border-2 p-2" defaultValue={application.property} disabled>
+                <option value="theArborVictorianLiving">The Arbor Victorian Living</option>
+                <option value="arborVitaliaCourtyard">Arbor Vitalia Courtyard</option>
+              </select>
             </div>
 
             <div className="flex flex-col">
@@ -252,8 +244,8 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
             </div>
           </fieldset>
 
-          <p className="flex flex mb-4 font-bold ml-12">Only persons listed on this application will be permitted to occupy the premises.</p>
-          <fieldset id="fieldset-2" className="flex flex-row mb-4 ml-12">
+          <p className="flex flex mb-4 font-bold">Only persons listed on this application will be permitted to occupy the premises.</p>
+          <fieldset id="fieldset-2" className="flex flex-row mb-4">
             <div className="flex flex-col">
               <div className="flex flex-row mr-4">
                 <label htmlFor="brokenLease" className="mb-2 pr-2 flex items-center">Have you ever broken a lease?</label>
@@ -271,44 +263,36 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               </div>
             </div>
           </fieldset>
-          <fieldset id="fieldset-3" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-3" className="flex flex-row mb-4">
             <div className="grid grid-cols-4 gap-4">
               <div>
                 <h2 className="mb-2">Names (Tenants to occupy the unit)</h2>
-                <input type="text" id="tenant1Name" name="tenant1Name" className="border-2 p-2" value={application.occupant_1_name} readOnly />
-                <input type="text" id="tenant2Name" name="tenant2Name" className="border-2 p-2" value={application.occupant_2_name} readOnly />
-                <input type="text" id="tenant3Name" name="tenant3Name" className="border-2 p-2" value={application.occupant_3_name} readOnly />
-                <input type="text" id="tenant4Name" name="tenant4Name" className="border-2 p-2" value={application.occupant_4_name} readOnly />
-                <input type="text" id="tenant5Name" name="tenant5Name" className="border-2 p-2" value={application.occupant_5_name} readOnly />
+                {application.occupants.map((occupant: Occupant, index) => {
+                  return (<input key={index} type="text" id={`tenant${index + 1}Name`} name={`tenant${index + 1}Name`} className="border-2 p-2" value={occupant.tenantName} readOnly />)
+                })}
               </div>
               <div>
                 <h2 className="mb-2">Relationship</h2>
-                <input type="text" id="tenant1Relationship" name="tenant1Relationship" className="border-2 p-2" value={application.occupant_1_relationship} readOnly />
-                <input type="text" id="tenant2Relationship" name="tenant2Relationship" className="border-2 p-2" value={application.occupant_2_relationship} readOnly />
-                <input type="text" id="tenant3Relationship" name="tenant3Relationship" className="border-2 p-2" value={application.occupant_3_relationship} readOnly />
-                <input type="text" id="tenant4Relationship" name="tenant4Relationship" className="border-2 p-2" value={application.occupant_4_relationship} readOnly />
-                <input type="text" id="tenant5Relationship" name="tenant5Relationship" className="border-2 p-2" value={application.occupant_5_relationship} readOnly />
+                {application.occupants.map((occupant: Occupant, index) => {
+                  return (<input key={index} type="text" id={`tenant${index + 1}Relationship`} name={`tenant${index + 1}Relationship`} className="border-2 p-2" value={occupant.tenantRelationship} readOnly />)
+                })}
               </div>
               <div>
                 <h2 className="mb-2">Age</h2>
-                <input type="number" id="tenant1Age" name="tenant1Age" className="border-2 p-2" value={application.occupant_1_age} readOnly />
-                <input type="number" id="tenant2Age" name="tenant2Age" className="border-2 p-2" value={application.occupant_2_age} readOnly />
-                <input type="number" id="tenant3Age" name="tenant3Age" className="border-2 p-2" value={application.occupant_3_age} readOnly />
-                <input type="number" id="tenant4Age" name="tenant4Age" className="border-2 p-2" value={application.occupant_4_age} readOnly />
-                <input type="number" id="tenant5Age" name="tenant5Age" className="border-2 p-2" value={application.occupant_5_age} readOnly />
+                {application.occupants.map((occupant: Occupant, index) => {
+                  return (<input key={index} type="text" id={`tenant${index + 1}Age`} name={`tenant${index + 1}Age`} className="border-2 p-2" value={occupant.tenantAge} readOnly />)
+                })}
               </div>
               <div>
-                <h2 className="mb-2">Email address</h2>
-                <input type="email" id="tenant1Email" name="tenant1Email" className="border-2 p-2" value={application.occupant_1_email} readOnly />
-                <input type="email" id="tenant2Email" name="tenant2Email" className="border-2 p-2" value={application.occupant_2_email} readOnly />
-                <input type="email" id="tenant3Email" name="tenant3Email" className="border-2 p-2" value={application.occupant_3_email} readOnly />
-                <input type="email" id="tenant4Email" name="tenant4Email" className="border-2 p-2" value={application.occupant_4_email} readOnly />
-                <input type="email" id="tenant5Email" name="tenant5Email" className="border-2 p-2" value={application.occupant_5_email} readOnly />
+                <h2 className="mb-2">Email Address</h2>
+                {application.occupants.map((occupant: Occupant, index) => {
+                  return (<input key={index} type="text" id={`tenant${index + 1}Email`} name={`tenant${index + 1}Email`} className="border-2 p-2" value={occupant.tenantEmail} readOnly />)
+                })}
               </div>
             </div>
           </fieldset>
 
-          <fieldset id="fieldset-4" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-4" className="flex flex-row mb-4">
             <label htmlFor="firstChoice" className="flex items-center mb-2 mr-2">Apartment/Townhouse 1st Choice:</label>
             <input type="text" id="firstChoice" name="firstChoice" className="border-2 p-2" value={application.first_choice_unit} readOnly />
 
@@ -319,7 +303,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
             <input type="text" id="monthlyRental" name="monthlyRental" className="border-2 p-2" value={application.monthly_rental} readOnly />
           </fieldset>
 
-          <fieldset id="fieldset-5" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-5" className="flex flex-row mb-4">
             <div className="flex flex-col">
               <div className="flex flex-row">
                 <label htmlFor="vehicle1" className="mb-2 mr-2">Vehicle #1:</label>
@@ -337,89 +321,57 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               </div>
             </div>
           </fieldset>
-          <fieldset id="fieldset-6" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-6" className="flex flex-row mb-4">
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <h2 className="mb-2">Tenant 1</h2>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1Occupation" className="flex flex-col mb-2">Occupation:</label>
-                  <input type="text" id="tenant1Occupation" name="tenant1Occupation" className="flex flex-col border-2 p-2" value={application.tenant_1_occupation} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1EmploymentType" className="mb-2">Full or Part Time:</label>
-                  <input type="text" id="tenant1EmploymentType" name="tenant1EmploymentType" className="border-2 p-2" value={application.tenant_1_full_or_part_time} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1Employer" className="mb-2">Employed by:</label>
-                  <input type="text" id="tenant1Employer" name="tenant1Employer" className="border-2 p-2" value={application.tenant_1_employer} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1EmployerAddress" className="mb-2">Address:</label>
-                  <input type="text" id="tenant1EmployerAddress" name="tenant1EmployerAddress" className="border-2 p-2" value={application.tenant_1_address} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1EmploymentDuration" className="mb-2">How Long?</label>
-                  <input type="text" id="tenant1EmploymentDuration" name="tenant1EmploymentDuration" className="border-2 p-2" value={application.tenant_1_employment_term} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1AnnualIncome" className="mb-2">Annual Income?</label>
-                  <input type="text" id="tenant1AnnualIncome" name="tenant1AnnualIncome" className="border-2 p-2" value={application.tenant_1_annual_income} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1BusinessTelephone" className="mb-2">Business Telephone:</label>
-                  <input type="tel" id="tenant1BusinessTelephone" name="tenant1BusinessTelephone" className="border-2 p-2" value={application.tenant_1_business_telephone} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1Bank" className="mb-2">Bank:</label>
-                  <input type="text" id="tenant1Bank" name="tenant1Bank" className="border-2 p-2" value={application.tenant_1_bank} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant1BankBranch" className="mb-2">Branch:</label>
-                  <input type="text" id="tenant1BankBranch" name="tenant1BankBranch" className="border-2 p-2" value={application.tenant_1_branch} readOnly />
-                </div>
-              </div>
-              <div className="grid grid-rows-8">
-                <h2 className="mb-2">Tenant 2</h2>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2Occupation" className="flex flex-col mb-2">Occupation:</label>
-                  <input type="text" id="tenant2Occupation" name="tenant2Occupation" className="flex flex-col border-2 p-2" value={application.tenant_2_occupation} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2EmploymentType" className="mb-2">Full or Part Time:</label>
-                  <input type="text" id="tenant2EmploymentType" name="tenant2EmploymentType" className="border-2 p-2" value={application.tenant_2_full_or_part_time} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2Employer" className="mb-2">Employed by:</label>
-                  <input type="text" id="tenant2Employer" name="tenant2Employer" className="border-2 p-2" value={application.tenant_2_employed_by} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2EmployerAddress" className="mb-2">Address:</label>
-                  <input type="text" id="tenant2EmployerAddress" name="tenant2EmployerAddress" className="border-2 p-2" value={application.tenant_2_address} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2EmploymentDuration" className="mb-2">How Long?</label>
-                  <input type="text" id="tenant2EmploymentDuration" name="tenant2EmploymentDuration" className="border-2 p-2" value={application.tenant_2_how_long} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2AnnualIncome" className="mb-2">Annual Income?</label>
-                  <input type="text" id="tenant2AnnualIncome" name="tenant2AnnualIncome" className="border-2 p-2" value={application.tenant_2_annual_income} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2BusinessTelephone" className="mb-2">Business Telephone:</label>
-                  <input type="tel" id="tenant2BusinessTelephone" name="tenant2BusinessTelephone" className="border-2 p-2" value={application.tenant_2_business_telephone} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2Bank" className="mb-2">Bank:</label>
-                  <input type="text" id="tenant2Bank" name="tenant2Bank" className="border-2 p-2" value={application.tenant_2_bank} readOnly />
-                </div>
-                <div className="flex items-center justify-center gap-x-2">
-                  <label htmlFor="tenant2BankBranch" className="mb-2">Branch:</label>
-                  <input type="text" id="tenant2BankBranch" name="tenant2BankBranch" className="border-2 p-2" value={application.tenant_2_branch} readOnly />
-                </div>
-              </div>
+              {application.tenants.map((tenant: Tenant, index) => {
+                return (
+                  <div key={index}>
+                    <h2 className="mb-2">Tenant {index + 1}</h2>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}Fullname`} className="flex flex-col mb-2">Full Name:</label>
+                      <input type="text" id={`tenant${index + 1}Fullname`} name={`tenant${index + 1}Fullname`} className="flex flex-col border-2 p-2" value={tenant.tenantFullname} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}Occupation`} className="flex flex-col mb-2">Occupation:</label>
+                      <input type="text" id={`tenant${index + 1}Occupation`} name={`tenant${index + 1}Occupation`} className="flex flex-col border-2 p-2" value={tenant.tenantOccupation} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}EmploymentType`} className="mb-2">Full or Part Time:</label>
+                      <input type="text" id={`tenant${index + 1}EmploymentType`} name={`tenant${index + 1}EmploymentType`} className="border-2 p-2" value={tenant.tenantEmploymentType} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}Employer`} className="mb-2">Employed by:</label>
+                      <input type="text" id={`tenant${index + 1}Employer`} name={`tenant${index + 1}Employer`} className="border-2 p-2" value={tenant.tenantEmployer} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}EmployerAddress`} className="mb-2">Address:</label>
+                      <input type="text" id={`tenant${index + 1}EmployerAddress`} name={`tenant${index + 1}EmployerAddress`} className="border-2 p-2" value={tenant.tenantEmployerAddress} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}EmploymentDuration`} className="mb-2">How Long?</label>
+                      <input type="text" id={`tenant${index + 1}EmploymentDuration`} name={`tenant${index + 1}EmploymentDuration`} className="border-2 p-2" value={tenant.tenantEmploymentDuration} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}AnnualIncome`} className="mb-2">Annual Income?</label>
+                      <input type="text" id={`tenant${index + 1}AnnualIncome`} name={`tenant${index + 1}AnnualIncome`} className="border-2 p-2" value={tenant.tenantAnnualIncome} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}BusinessTelephone`} className="mb-2">Business Telephone:</label>
+                      <input type="tel" id={`tenant${index + 1}BusinessTelephone`} name={`tenant${index + 1}BusinessTelephone`} className="border-2 p-2" value={tenant.tenantBusinessTelephone} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}Bank`} className="mb-2">Bank:</label>
+                      <input type="text" id={`tenant${index + 1}Bank`} name={`tenant${index + 1}Bank`} className="border-2 p-2" value={tenant.tenantBank} readOnly />
+                    </div>
+                    <div className="flex items-center justify-center gap-x-2">
+                      <label htmlFor={`tenant${index + 1}BankBranch`} className="mb-2">Branch:</label>
+                      <input type="text" id={`tenant${index + 1}BankBranch`} name={`tenant${index + 1}BankBranch`} className="border-2 p-2" value={tenant.tenantBankBranch} readOnly />
+                    </div>
+                  </div>)
+              })}
             </div>
           </fieldset>
-          <fieldset id="fieldset-7" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-7" className="flex flex-row mb-4">
             <div className="grid grid-cols-3 gap-4">
               <div>
                 <h2 className="mb-2">Personal Reference</h2>
@@ -467,7 +419,6 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
                   <input type="text" id="personalRef2HowLong" name="personalRef2HowLong" className="border-2 p-2" value={application.professional_ref_how_long} readOnly />
                 </div>
               </div>
-
               <div>
                 <h2 className="mb-2">Current Landlord/Superintendent/Owner/Mortgage Company</h2>
                 <div className="flex items-center justify-center gap-x-2">
@@ -485,7 +436,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               </div>
             </div>
           </fieldset>
-          <fieldset id="fieldset-8" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-8" className="flex flex-row mb-4">
             <div className="flex flex-col">
               <label htmlFor="emergencyContactName" className="mb-2">Emergency Contact Name:</label>
               <input type="text" id="emergencyContactName" name="emergencyContactName" className="border-2 p-2" value={application.emergency_contact_name} readOnly />
@@ -497,7 +448,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               <input type="text" id="emergencyContactTelephone" name="emergencyContactTelephone" className="border-2 p-2" value={application.emergency_contact_phone} readOnly />
             </div>
           </fieldset>
-          <fieldset id="fieldset-9" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-9" className="flex flex-row mb-4">
             <div className="flex flex-col gap-y-4">
               <div className="flex">
                 <p className="text-left">Do you give management permission to contact the personal or professional references listed above, both now and in the
@@ -537,7 +488,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               </div>
             </div>
           </fieldset>
-          <fieldset id="fieldset-10" className="flex flex-row mb-4 ml-12">
+          <fieldset id="fieldset-10" className="flex flex-row mb-4">
             <p className="text-left">The applicant offers to lease the said townhouse and hereby agrees to pay the sum of $ <input type="number" name="holdingFee" className="border-2" value={application.holding_fee} readOnly /> as a holding fee on the
               understanding that if the offer is accepted the fee shall be retained by the landlord or his agent as a Security Deposit during
               the tenancy of the premises and will be refunded at termination of the tenancy pursuant to the Residential Tenancies Act
@@ -546,7 +497,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
               PROVIDED HOWEVER, that if on notification of the offer the Tenant fails to execute the lease the said fee shall forthwith be
               forfeited and retained by the Landlord or his agent.</p>
           </fieldset>
-          <fieldset id="fieldset-11" className="flex flex-row mb-4 items-center gap-x-2 ml-12">
+          <fieldset id="fieldset-11" className="flex flex-row mb-4 items-center gap-x-2">
             <label htmlFor="applicantSignature" className="mb-2">Signature:</label>
             <input type="text" id="applicantSignature" name="applicantSignature" className="border-2 p-2" value={application.applicant_signature} readOnly />
           </fieldset>

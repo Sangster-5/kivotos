@@ -554,7 +554,7 @@ const AdminLoginForm = () => {
                                     </div>
                                 </section>
                             )}
-                            {(tabView == "leases-tab" && user.tasks_admin) && (
+                            {(tabView == "leases-tab" && user.tasks_admin && user.create_leases) && (
                                 <section className='w-full'>
                                     <div className="bg-gray-100 p-8 flex flex-col">
                                         <div className="flex flex-row">
@@ -588,8 +588,13 @@ const AdminLoginForm = () => {
 export default AdminLoginForm;
 
 const Units: React.FC = () => {
+
+    const fetchUnits = () => { }
+
+    useEffect(fetchUnits, []);
+
     return (
-        <h1>Units</h1>
+        <h1>No Units Uploaded</h1>
     )
 }
 
@@ -940,14 +945,15 @@ type Lease = {
     termination_date: Date;
     unit: number;
     user: number
+    signed: boolean;
 }
 
 const Leases: React.FC = () => {
     const [leases, setLeases] = useState<Lease[]>([]);
     const [ranOnce, setRanOnce] = useState(false);
 
-    useEffect(() => {
-        if (ranOnce) return;
+    const fetchLeases = (runAnyways: Boolean = false) => {
+        if (ranOnce && !runAnyways) return;
         fetch("/api/lease/get", {
             method: "GET",
             credentials: "include",
@@ -963,38 +969,157 @@ const Leases: React.FC = () => {
             .catch((error) => {
                 console.log(error);
             });
-    }, [ranOnce, leases, setLeases])
+    }
+
+    useEffect(fetchLeases, [ranOnce, leases, setLeases])
+
+    const handleLeaseConfirmation = (event: React.MouseEvent<HTMLButtonElement>) => {
+        const id = event.currentTarget.parentElement?.id;
+        if (!id) return;
+
+        fetch("/api/lease/confirm", {
+            method: "POST",
+            credentials: "include",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ id })
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                fetchLeases(true);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
 
     return (
         <>
-            {leases.length > 0 && leases.map((lease: Lease, index) => {
-                return (
-                    // Seperate by timeframe until expiration for ongoing leases (3months, 1month maybe 6?)
-                    <>
-                        <div key={index} className="flex flex-row">
-                            <select name="leaseTimeFrame" id="leaseTimeFrame" defaultValue="ongoing" className='mb-4 px-4 py-1 rounded-md'>
-                                <option value="all">All</option>
-                                <option value="ongoing">Ongoing</option>
-                                <option value="expired">Expired</option>
-                            </select>
-                        </div >
-                        <div className="flex flex-row gap-x-2">
-                            <h1>{lease.unit}</h1>
-                            <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
-                            <h1>{lease.rental_amount}</h1>
-                            <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
-                            <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
-                            {/* Make button to set lease as signed, attach to unit in table
-                                * Add download lease button here as well, copy from applications
-                                * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
-                                * Store application ID (maybe)
-                                * Sort by how closre to expiration, maybe filter by property
-                            */}
-                        </div>
-                    </>
-                )
-            })}
-        </>)
+            {/* // Seperate by timeframe until expiration for ongoing leases (3months, 1month maybe 6?) */}
+            <div className="flex flex-row gap-x-2">
+                <select name="leaseTimeFrame" id="leaseTimeFrame" defaultValue="ongoing" className='mb-4 px-4 py-1 rounded-md'>
+                    <option value="all">All</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="expired">Expired</option>
+                </select>
+                <select name="leaseConfirmationType" id="leaseConfirmationType" defaultValue="all" className='mb-4 px-4 py-1 rounded-md'>
+                    <option value="all">All</option>
+                    <option value="signed">Signed</option>
+                    <option value="unsigned">Unsigned</option>
+                </select>
+            </div >
+            <div className="flex flex-row">
+                <div className="flex flex-col w-1/3">
+                    <h1 className='font-bold'>&lt;1 Month</h1>
+                </div>
+                <div className="flex flex-col w-1/3">
+                    <h1 className='font-bold'>&lt;3 Months</h1>
+                </div>
+                <div className="flex flex-col w-1/3">
+                    <h1 className='font-bold'>&lt;6 Months</h1>
+                </div>
+            </div>
+            <div className="flex flex-row items-center gap-x-2">
+                <div className="flex gap-y-1 flex-col w-1/3">
+                    {leases.length > 0 && leases.map((lease: Lease, index) => {
+                        const diffTime = new Date().getTime() - new Date(lease.effective_date).getTime();
+                        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+                        if (diffMonths <= 1 && diffMonths > 0) {
+                            return (
+
+                                <div key={index} className="flex flex-row">
+                                    <div id={lease.id.toString()} className="flex gap-y-1 flex-col">
+                                        <h1>Unit: {lease.unit}</h1>
+                                        <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                        <h1>${lease.rental_amount}</h1>
+                                        <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
+                                        <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                                        <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                                        {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
+                                        {/* 
+                                        * Make button to set lease as signed, attach to unit in table
+                                        * Add download lease button here as well, copy from applications
+                                        * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
+                                        * Store application ID (maybe)
+                                        * Sort by how closre to expiration, maybe filter by property
+                                    */}
+                                    </div>
+                                </div>
+                            )
+                        } else {
+                            return;
+                        }
+                    })}
+                </div>
+                <div className="flex gap-y-1 flex-col w-1/3">
+                    {leases.length > 0 && leases.map((lease: Lease, index) => {
+                        const diffTime = new Date(lease.effective_date).getTime() - new Date().getTime();
+                        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+                        if (diffMonths < 3 && diffMonths > 1) {
+                            return (
+
+                                <div key={index} className="flex flex-row">
+                                    <div id={lease.id.toString()} className="flex gap-y-1 flex-col">
+                                        <h1>Unit: {lease.unit}</h1>
+                                        <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                        <h1>${lease.rental_amount}</h1>
+                                        <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
+                                        <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                                        <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                                        {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
+                                        {/* 
+                                        * Make button to set lease as signed, attach to unit in table
+                                        * Add download lease button here as well, copy from applications
+                                        * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
+                                        * Store application ID (maybe)
+                                        * Sort by how closre to expiration, maybe filter by property
+                                    */}
+                                    </div>
+                                </div>
+                            )
+                        } else {
+                            return;
+                        }
+                    })}
+                </div>
+                <div className="flex flex-col w-1/3">
+                    {leases.length > 0 && leases.map((lease: Lease, index) => {
+                        const diffTime = new Date(lease.effective_date).getTime() - new Date().getTime();
+                        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+                        if (diffMonths < 6 && diffMonths > 3) {
+                            return (
+
+                                <div key={index} className="flex flex-row">
+                                    <div id={lease.id.toString()} className="flex gap-y-1 flex-col">
+                                        <h1>Unit: {lease.unit}</h1>
+                                        <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                        <h1>${lease.rental_amount}</h1>
+                                        <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
+                                        <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                                        <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                                        {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
+                                        {/* 
+                                        * Make button to set lease as signed, attach to unit in table
+                                        * Add download lease button here as well, copy from applications
+                                        * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
+                                        * Store application ID (maybe)
+                                        * Sort by how closre to expiration, maybe filter by property
+                                    */}
+                                    </div>
+                                </div>
+                            )
+                        } else {
+                            return;
+                        }
+                    })}
+                </div>
+            </div>
+        </>
+    )
 }
 
 interface RentalApplicationProps {
@@ -1220,28 +1345,26 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
     return (
         <div>
             {(applications.length > 0 && !createLease) && applications.map((application: RentalApplication, index) => {
-                return <>
-                    {application &&
-                        <div className='flex flex-row gap-x-2' key={index}>
-                            <p className='flex flex-col'>{application.name}</p>
-                            <p className='flex flex-col'>{application.email_address}</p>
-                            <p className='flex flex-col'>{application.telephone_number}</p>
-                            <p className='flex flex-col'>{new Date(application.timestamp).toDateString()}</p>
-                            {(user?.create_leases && application.approved && !application.lease_created) && (<button id={application.id} onClick={handleCreateLeaseClick} className="flex flex-col border-2 px-2">Create Lease</button>)}
-                            {user?.create_leases && application.lease_created && (
-                                <>
-                                    <a download={application.id} href={`/api/files?type=lease&filename=${application.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
-                                </>
-                            )}
-                            {(user?.approve_applications && !application.lease_created) && (
-                                <>
-                                    <button id={application.id} onClick={handleApproval} className="flex flex-col border-2 px-2">Approve</button>
-                                    <button id={application.id} onClick={handleDeny} className="flex flex-col border-2 px-2">Deny</button>
-                                </>
-                            )}
-                        </div >
-                    }
-                </>
+                return (
+                    <div className='flex flex-row gap-x-2' key={index}>
+                        <p className='flex flex-col'>{application.name}</p>
+                        <p className='flex flex-col'>{application.email_address}</p>
+                        <p className='flex flex-col'>{application.telephone_number}</p>
+                        <p className='flex flex-col'>{new Date(application.timestamp).toDateString()}</p>
+                        {(user?.create_leases && application.approved && !application.lease_created) && (<button id={application.id} onClick={handleCreateLeaseClick} className="flex flex-col border-2 px-2">Create Lease</button>)}
+                        {user?.create_leases && application.lease_created && (
+                            <>
+                                <a download={application.id} href={`/api/files?type=lease&filename=${application.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                            </>
+                        )}
+                        {(user?.approve_applications && !application.lease_created) && (
+                            <>
+                                {!application.approved && <button id={application.id} onClick={handleApproval} className="flex flex-col border-2 px-2">Approve</button>}
+                                {!application.rejected && <button id={application.id} onClick={handleDeny} className="flex flex-col border-2 px-2">Deny</button>}
+                            </>
+                        )}
+                    </div >
+                )
             })}
             {
                 (createLease && leaseForm != 0) && (

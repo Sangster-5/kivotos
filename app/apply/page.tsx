@@ -2,35 +2,148 @@
 
 import { useState } from "react";
 
+type TenantType = {
+    tenantFullname: FormDataEntryValue | null;
+    tenantOccupation: FormDataEntryValue | null;
+    tenantEmploymentType: FormDataEntryValue | null;
+    tenantEmployer: FormDataEntryValue | null;
+    tenantEmployerAddress: FormDataEntryValue | null;
+    tenantEmploymentDuration: FormDataEntryValue | null;
+    tenantAnnualIncome: number;
+    tenantBusinessTelephone: FormDataEntryValue | null;
+    tenantBank: FormDataEntryValue | null;
+    tenantBankBranch: FormDataEntryValue | null;
+};
+
+type OccupantType = {
+    tenantName: FormDataEntryValue | null;
+    tenantRelationship: FormDataEntryValue | null;
+    tenantAge: FormDataEntryValue | null;
+    tenantEmail: FormDataEntryValue | null;
+};
+
+
 const RentalApplicationForm = () => {
     const [showMainForm, setShowMainForm] = useState(false);
     const handleKivotosRegistration = () => {
-        document.getElementById("kivotosEmail")?.classList.toggle("hidden");
-        document.getElementById("kivotosPassword")?.classList.toggle("hidden");
-        document.getElementById("kivotosTitle")?.classList.toggle("hidden");
-        document.getElementById("registerButton")?.classList.toggle("hidden");
+        const kivotosEmail = document.getElementById("kivotosEmail") as HTMLInputElement;
+        const kivotosPassword = document.getElementById("kivotosPassword") as HTMLInputElement;
+        if (kivotosEmail && kivotosPassword && kivotosEmail.value != "" && kivotosPassword.value != "" && kivotosEmail.value.includes("@")) {
+            kivotosEmail.classList.toggle("hidden");
+            kivotosPassword.classList.toggle("hidden");
+            document.getElementById("kivotosTitle")?.classList.toggle("hidden");
+            document.getElementById("registerButton")?.classList.toggle("hidden");
 
-        setShowMainForm(true);
+            setShowMainForm(true);
+        } else {
+            const errorMsg = document.getElementById("error-msg");
+            if (errorMsg) {
+                errorMsg.textContent = "Please fill in all fields and ensure property email formatting";
+                errorMsg.classList.remove("hidden");
+                setTimeout(() => { errorMsg.classList.add("hidden") }, 2500)
+            }
+        }
+    }
+
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("");
+
+    const [occupantCount, setOccupantCount] = useState<number[]>([]);
+    const maxOccupants = 6; // Set the maximum number tenants - 5 (for the initial 5 Occupants)
+
+    const [tenantCount, setTenantCount] = useState<number[]>([]);
+    const maxTenants = 6; // Set the maximum number tenants - 2 (for the initial 2 tenants)
+
+    const submitApplication = async (formData: FormData) => {
+        let tenants: TenantType[] = [];
+        let occupants: OccupantType[] = [];
+
+        for (let i = 0; i < tenantCount.length + 2; i++) {
+            const currentTenant = {
+                tenantFullname: formData.get(`tenant${i + 1}Fullname`),
+                tenantOccupation: formData.get(`tenant${i + 1}Occupation`),
+                tenantEmploymentType: formData.get(`tenant${i + 1}EmploymentType`),
+                tenantEmployer: formData.get(`tenant${i + 1}Employer`),
+                tenantEmployerAddress: formData.get(`tenant${i + 1}EmployerAddress`),
+                tenantEmploymentDuration: formData.get(`tenant${i + 1}EmploymentDuration`),
+                tenantAnnualIncome: parseInt(formData.get(`tenant${i + 1}AnnualIncome`) as string) ? parseInt(formData.get(`tenant${i + 1}AnnualIncome`) as string) : 0,
+                tenantBusinessTelephone: formData.get(`tenant${i + 1}BusinessTelephone`),
+                tenantBank: formData.get(`tenant${i + 1}Bank`),
+                tenantBankBranch: formData.get(`tenant${i + 1}BankBranch`),
+            }
+            tenants.push(currentTenant);
+        }
+
+        for (let i = 0; i < occupantCount.length + 5; i++) {
+            const currentOccupant = {
+                tenantName: formData.get(`tenant${i + 1}Name`),
+                tenantRelationship: formData.get(`tenant${i + 1}Relationship`),
+                tenantAge: formData.get(`tenant${i + 1}Age`),
+                tenantEmail: formData.get(`tenant${i + 1}Email`),
+            }
+            occupants.push(currentOccupant);
+        }
+
+        formData.append('tenants', JSON.stringify(tenants));
+        formData.append('occupantsData', JSON.stringify(occupants));
+
+        fetch("/api/application/submit", {
+            method: "POST",
+            credentials: "include",
+            body: formData
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                setShowMainForm(false);
+                setSuccessMessage(data.message);
+                setShowSuccess(true);
+
+                setTimeout(() => {
+                    location.replace("/")
+                }, 2000)
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     }
 
     return (
-        <div className="p-4 flex justify-center items-center">
-            <form method="POST" action="/api/application/submit" encType="multipart/form-data">
-                <h1 id="kivotosTitle">Create your Kivotos login</h1>
-                <input required type="email" name="kivotosEmail" id="kivotosEmail" placeholder="Email Address" className="border-2" />
-                <input required type="password" name="kivotosPassword" id="kivotosPassword" placeholder="Password" className="border-2" />
+        <>
+            {!showSuccess && (
+                <>
+                    <div className="p-4 flex justify-center items-center">
+                        <form action={submitApplication}>
+                            <h1 id="kivotosTitle">Create your Kivotos login</h1>
+                            <input required type="email" name="kivotosEmail" id="kivotosEmail" placeholder="Email Address" className="border-2" />
+                            <input required type="password" name="kivotosPassword" id="kivotosPassword" placeholder="Password" className="border-2" />
+                            <p id="error-msg" className="hidden text-red-500"></p>
+                            <button id="registerButton" type="button" onClick={handleKivotosRegistration}>Proceed to Application</button>
 
-                <button id="registerButton" type="button" onClick={handleKivotosRegistration}>Proceed to Application</button>
+                            {showMainForm && <MainApplicationForm tenantCount={tenantCount} setTenantCount={setTenantCount} maxTenants={maxTenants} occupantCount={occupantCount} setOccupantCount={setOccupantCount} maxOccupants={maxOccupants} />}
+                        </form >
+                    </div >
+                </>
+            )}
 
-                {showMainForm && <MainApplicationForm />}
-            </form >
-        </div >
+            {showSuccess && (
+                <h1>{successMessage}</h1>
+            )}
+        </>
     );
 }
 
 export default RentalApplicationForm;
 
-const MainApplicationForm: React.FC = () => {
+interface MainApplicationFormProps {
+    tenantCount: number[];
+    setTenantCount: React.Dispatch<React.SetStateAction<number[]>>;
+    maxTenants: number;
+    occupantCount: number[];
+    setOccupantCount: React.Dispatch<React.SetStateAction<number[]>>;
+    maxOccupants: number;
+}
+
+const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, setTenantCount, maxTenants, occupantCount, setOccupantCount, maxOccupants }) => {
     const [isUploadingID, setIsUploadingID] = useState(false);
     const [isUploadingPayStubs, setIsUploadingPayStubs] = useState(false);
     const [isUploadingTaxReturn, setIsUploadingTaxReturn] = useState(false);
@@ -47,8 +160,22 @@ const MainApplicationForm: React.FC = () => {
         setIsUploadingTaxReturn(e.target.checked);
     }
 
+    const addTenantDiv = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        if (tenantCount.length < maxTenants) {
+            setTenantCount([...tenantCount, tenantCount.length + 1]);
+        }
+    };
+
+    const handleAddOccupant = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        if (occupantCount.length < maxOccupants) {
+            setOccupantCount([...occupantCount, occupantCount.length + 1]);
+        }
+    }
+
     return (
-        <>{/* Date is auto generated */}
+        <>
             <div className="text-center">
                 <h1 className="text-2xl font-bold mb-4">Rental Application Form</h1>
                 <p className="mb-4">Incomplete Applications will not be processed.</p>
@@ -76,6 +203,12 @@ const MainApplicationForm: React.FC = () => {
 
                     <label htmlFor="rentalDuration" className="mb-2">How long do you plan to live in the rental unit?</label>
                     <input type="text" id="rentalDuration" name="rentalDuration" className="border-2 p-2" />
+
+                    <label htmlFor="property">Select Property</label>
+                    <select name="property" id="property" className="border-2 p-2" defaultValue={"theArborVictorianLiving"}>
+                        <option value="theArborVictorianLiving">The Arbor Victorian Living</option>
+                        <option value="arborVitaliaCourtyard">Arbor Vitalia Courtyard</option>
+                    </select>
                 </div>
 
                 <div className="flex flex-col">
@@ -140,15 +273,19 @@ const MainApplicationForm: React.FC = () => {
                     </div>
                 </div>
             </fieldset>
+            <button className="border-2 bg-white rounded-md px-2 py-1" onClick={handleAddOccupant}>Add Occupant</button>
             <fieldset id="fieldset-3" className="flex flex-row mb-4">
                 <div className="grid grid-cols-4 gap-4">
                     <div>
-                        <h2 className="mb-2">Names (Tenants to occupy the unit)</h2>
+                        <h2 className="mb-2">First name, initial, Last name (Tenants to occupy the unit)</h2>
                         <input type="text" id="tenant1Name" name="tenant1Name" className="border-2 p-2" />
                         <input type="text" id="tenant2Name" name="tenant2Name" className="border-2 p-2" />
                         <input type="text" id="tenant3Name" name="tenant3Name" className="border-2 p-2" />
                         <input type="text" id="tenant4Name" name="tenant4Name" className="border-2 p-2" />
                         <input type="text" id="tenant5Name" name="tenant5Name" className="border-2 p-2" />
+                        {occupantCount.map((div, index) => {
+                            return <input key={index} type="text" id={`tenant${div + 5}Name`} name={`tenant${div + 5}Name`} className="border-2 p-2" />
+                        })}
                     </div>
                     <div>
                         <h2 className="mb-2">Relationship</h2>
@@ -157,6 +294,9 @@ const MainApplicationForm: React.FC = () => {
                         <input type="text" id="tenant3Relationship" name="tenant3Relationship" className="border-2 p-2" />
                         <input type="text" id="tenant4Relationship" name="tenant4Relationship" className="border-2 p-2" />
                         <input type="text" id="tenant5Relationship" name="tenant5Relationship" className="border-2 p-2" />
+                        {occupantCount.map((div, index) => {
+                            return <input key={index} type="text" id={`tenant${div + 5}Relationship`} name={`tenant${div + 5}Relationship`} className="border-2 p-2" />
+                        })}
                     </div>
                     <div>
                         <h2 className="mb-2">Age</h2>
@@ -165,6 +305,9 @@ const MainApplicationForm: React.FC = () => {
                         <input type="number" id="tenant3Age" name="tenant3Age" className="border-2 p-2" />
                         <input type="number" id="tenant4Age" name="tenant4Age" className="border-2 p-2" />
                         <input type="number" id="tenant5Age" name="tenant5Age" className="border-2 p-2" />
+                        {occupantCount.map((div, index) => {
+                            return <input key={index} type="number" id={`tenant${div + 5}Age`} name={`tenant${div + 5}Age`} className="border-2 p-2" />
+                        })}
                     </div>
                     <div>
                         <h2 className="mb-2">Email address</h2>
@@ -173,6 +316,9 @@ const MainApplicationForm: React.FC = () => {
                         <input type="email" id="tenant3Email" name="tenant3Email" className="border-2 p-2" />
                         <input type="email" id="tenant4Email" name="tenant4Email" className="border-2 p-2" />
                         <input type="email" id="tenant5Email" name="tenant5Email" className="border-2 p-2" />
+                        {occupantCount.map((div, index) => {
+                            return <input key={index} type="email" id={`tenant${div + 5}Email`} name={`tenant${div + 5}Email`} className="border-2 p-2" />
+                        })}
                     </div>
                 </div>
             </fieldset>
@@ -205,10 +351,17 @@ const MainApplicationForm: React.FC = () => {
                     </div>
                 </div>
             </fieldset>
+            <div className="flex flex-row my-2">
+                <button onClick={addTenantDiv} className="border-2 bg-white rounded-md px-2 py-1">Add Tenant</button>
+            </div>
             <fieldset id="fieldset-6" className="flex flex-row mb-4">
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
+                <div id="tenants-container" className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-rows-8">
                         <h2 className="mb-2">Tenant 1</h2>
+                        <div className="flex items-center justify-center gap-x-2">
+                            <label htmlFor="tenant1Fullname" className="flex flex-col mb-2">First Name, Initial, Last Name:</label>
+                            <input type="text" id="tenant1Fullname" name="tenant1Fullname" className="flex flex-col border-2 p-2" />
+                        </div>
                         <div className="flex items-center justify-center gap-x-2">
                             <label htmlFor="tenant1Occupation" className="flex flex-col mb-2">Occupation:</label>
                             <input type="text" id="tenant1Occupation" name="tenant1Occupation" className="flex flex-col border-2 p-2" />
@@ -249,6 +402,10 @@ const MainApplicationForm: React.FC = () => {
                     <div className="grid grid-rows-8">
                         <h2 className="mb-2">Tenant 2</h2>
                         <div className="flex items-center justify-center gap-x-2">
+                            <label htmlFor="tenant2Fullname" className="flex flex-col mb-2">First Name, Initial, Last Name:</label>
+                            <input type="text" id="tenant2Fullname" name="tenant2Fullname" className="flex flex-col border-2 p-2" />
+                        </div>
+                        <div className="flex items-center justify-center gap-x-2">
                             <label htmlFor="tenant2Occupation" className="flex flex-col mb-2">Occupation:</label>
                             <input type="text" id="tenant2Occupation" name="tenant2Occupation" className="flex flex-col border-2 p-2" />
                         </div>
@@ -285,6 +442,51 @@ const MainApplicationForm: React.FC = () => {
                             <input type="text" id="tenant2BankBranch" name="tenant2BankBranch" className="border-2 p-2" />
                         </div>
                     </div>
+                    {tenantCount.map((div, index) => (
+                        <div key={index} className="grid grid-rows-8">
+                            <h2 className="mb-2">Tenant {div + 2}</h2>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}Fullname`} className="flex flex-col mb-2">First Name, Initial, Last Name:</label>
+                                <input type="text" id={`tenant${div + 2}Fullname`} name={`tenant${div + 2}Fullname`} className="flex flex-col border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}Occupation`} className="flex flex-col mb-2">Occupation:</label>
+                                <input type="text" id={`tenant${div + 2}Occupation`} name={`tenant${div + 2}Occupation`} className="flex flex-col border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}EmploymentType`} className="mb-2">Full or Part Time:</label>
+                                <input type="text" id={`tenant${div + 2}EmploymentType`} name={`tenant${div + 2}EmploymentType`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}Employer`} className="mb-2">Employed by:</label>
+                                <input type="text" id={`tenant${div + 2}Employer`} name={`tenant${div + 2}Employer`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}EmployerAddress`} className="mb-2">Address:</label>
+                                <input type="text" id={`tenant${div + 2}EmployerAddress`} name={`tenant${div + 2}EmployerAddress`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}EmploymentDuration`} className="mb-2">How Long?</label>
+                                <input type="text" id={`tenant${div + 2}EmploymentDuration`} name={`tenant${div + 2}EmploymentDuration`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}AnnualIncome`} className="mb-2">Annual Income?</label>
+                                <input type="text" id={`tenant${div + 2}AnnualIncome`} name={`tenant${div + 2}AnnualIncome`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}BusinessTelephone`} className="mb-2">Business Telephone:</label>
+                                <input type="tel" id={`tenant${div + 2}BusinessTelephone`} name={`tenant${div + 2}BusinessTelephone`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}Bank`} className="mb-2">Bank:</label>
+                                <input type="text" id={`tenant${div + 2}Bank`} name={`tenant${div + 2}Bank`} className="border-2 p-2" />
+                            </div>
+                            <div className="flex items-center justify-center gap-x-2">
+                                <label htmlFor={`tenant${div + 2}BankBranch`} className="mb-2">Branch:</label>
+                                <input type="text" id={`tenant${div + 2}BankBranch`} name={`tenant${div + 2}BankBranch`} className="border-2 p-2" />
+                            </div>
+                        </div>
+                    ))}
                 </div>
             </fieldset>
             <fieldset id="fieldset-7" className="flex flex-row mb-4">
