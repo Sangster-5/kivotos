@@ -11,9 +11,9 @@ export async function GET(req: NextRequest) {
   const filename = decodeURIComponent(searchParams.get('filename') as string);
 
   const cookies = parseCookie(req.cookies.toString());
-  if(!type || !filename) return new NextResponse('Type & Filename Required', { status: 400 });
+  if (!type || !filename) return NextResponse.json({ error: 'Type & Filename Required' }, { status: 400 });
 
-  if(type == "applicant" && decrypt(cookies.get('userID') as string) !== filename.split("_")[0]) return new NextResponse('Unauthorized', { status: 401 });
+  if (type == "applicant" && decrypt(cookies.get('userID') as string) !== filename.split("_")[0]) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   let filePath;
 
@@ -25,9 +25,9 @@ export async function GET(req: NextRequest) {
     case "lease":
       filePath = path.join(process.cwd(), 'leases', filename);
       break;
-      
+
     default:
-      return new NextResponse('Invalid type', { status: 400 });
+      return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
   }
 
   const contentType = mime.lookup(filename) || 'application/octet-stream';
@@ -42,6 +42,6 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    return new NextResponse('File not found', { status: 404 });
+    return NextResponse.json({ error: 'File not found' }, { status: 404 });
   }
 }

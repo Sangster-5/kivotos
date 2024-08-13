@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const client = await pool.connect();
-        
+
         const query = `
         INSERT INTO applications (
             name, birth_date, drivers_license_number, telephone_number, present_address, email_address, 
@@ -114,23 +114,23 @@ export async function POST(request: NextRequest) {
         `;
 
         const values = [
-        data.name, data.birthdate, data.driverLicense, data.telephone, data.presentAddress, data.email, 
-        data.rentalDuration, data.residenceType, data.ownershipType, data.howLong, data.maritalStatus, 
-        data.presentRental, data.occupants, data.unitNumber, data.occupancyDate, data.brokenLease, 
-        data.brokenLeaseReason, data.refusedToPayRent, data.filedForBankruptcy, data.firstChoice, data.secondChoice, 
-        data.monthlyRental, data.vehicle1, data.vehicle2, data.vehicle3, data.personalRef1Name, data.personalRef1Address, 
-        data.personalRef1Telephone, data.personalRef1Relationship, data.personalRef1HowLong, data.professionalRefName, 
-        data.professionalRefAddress, data.professionalRefTelephone, data.professionalRefRelationship, 
-        data.professionalRefHowLong, data.landlordName, data.landlordAddress, data.landlordTelephone, 
-        data.emergencyContactName, data.emergencyContactAddress, data.emergencyContactTelephone, 
-        data.permissionContactReferences, data.driversLicenseOrSin, data.payStubs, data.taxReturn, data.holdingFee, 
-        data.applicantSignature, data.userId, data.applicationID, data.timestamp, data.tenants, data.occupantsData, data.property
+            data.name, data.birthdate, data.driverLicense, data.telephone, data.presentAddress, data.email,
+            data.rentalDuration, data.residenceType, data.ownershipType, data.howLong, data.maritalStatus,
+            data.presentRental, data.occupants, data.unitNumber, data.occupancyDate, data.brokenLease,
+            data.brokenLeaseReason, data.refusedToPayRent, data.filedForBankruptcy, data.firstChoice, data.secondChoice,
+            data.monthlyRental, data.vehicle1, data.vehicle2, data.vehicle3, data.personalRef1Name, data.personalRef1Address,
+            data.personalRef1Telephone, data.personalRef1Relationship, data.personalRef1HowLong, data.professionalRefName,
+            data.professionalRefAddress, data.professionalRefTelephone, data.professionalRefRelationship,
+            data.professionalRefHowLong, data.landlordName, data.landlordAddress, data.landlordTelephone,
+            data.emergencyContactName, data.emergencyContactAddress, data.emergencyContactTelephone,
+            data.permissionContactReferences, data.driversLicenseOrSin, data.payStubs, data.taxReturn, data.holdingFee,
+            data.applicantSignature, data.userId, data.applicationID, data.timestamp, data.tenants, data.occupantsData, data.property
         ];
-        
+
         const insertUserResult = await client.query(`INSERT INTO users (id, email, password, application_id, name) VALUES (${userID}, '${formData.get("kivotosEmail")}', '${formData.get("kivotosPassword")}', ${applicationID}, '${data.name}')`);
 
         const insertApplicationResult = await client.query(query, values);
-        
+
         const encryptedEmail = encrypt(data.kivotosEmail as string);
         const encryptedPassword = encrypt(data.kivotosPassword as string);
         const encryptedUserID = encrypt(userID);
@@ -142,12 +142,12 @@ export async function POST(request: NextRequest) {
         cookieStore.set('email', encryptedEmail);
         cookieStore.set('password', encryptedPassword);
         cookieStore.set('userID', encryptedUserID);
-        
+
         client.release();
         return NextResponse.json({ message: `Application Submitted, you are now logged in under ${data.kivotosEmail} of password ${data.kivotosPassword}. Please save it now.` }, { status: 200 });
-        
+
     } catch (error) {
         console.error('Error querying PostgreSQL:', error);
-        return NextResponse.json({ message: "Error Submitting Application" }, { status: 500 });
+        return NextResponse.json({ error: "Error Submitting Application" }, { status: 500 });
     }
 };

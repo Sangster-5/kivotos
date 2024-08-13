@@ -5,14 +5,14 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
     const cookies = parseCookie(req.cookies.toString());
-    if(!cookies.get("adminUsername") || !cookies.get("adminPassword") || !cookies.get("adminID")) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-    
+    if (!cookies.get("adminUsername") || !cookies.get("adminPassword") || !cookies.get("adminID")) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const client = await pool.connect();
     const adminQuery = "SELECT * FROM admin WHERE id = $1;"
     const adminValues = [parseInt(decrypt(cookies.get("adminID") as string))];
     const adminResult = await client.query(adminQuery, adminValues);
 
-    if(adminResult.rows.length === 0) return client.release(), NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (adminResult.rows.length === 0) return client.release(), NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const query = "SELECT * FROM maintenance_requests;";
     const result = await client.query(query);
@@ -20,5 +20,5 @@ export async function GET(req: NextRequest) {
 
     client.release();
 
-    return NextResponse.json({ data }, {status: 200});
+    return NextResponse.json({ data }, { status: 200 });
 }

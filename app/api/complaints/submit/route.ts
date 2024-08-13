@@ -7,7 +7,7 @@ import { parseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { decrypt } from "@/lib/encryption-keys";
 
 export async function POST(req: NextRequest) {
-    if(!req.body) return NextResponse.json({ message: "Invalid Request" }, {status: 400});
+    if (!req.body) return NextResponse.json({ error: "Invalid Request" }, { status: 400 });
 
     const formData = await req.formData();
     const complaintType = formData.get("complaintType") as string;
@@ -29,10 +29,10 @@ export async function POST(req: NextRequest) {
     const values = [complaintID, complaintType, additionalDetails, "pending"];
     const result = await client.query(query, values);
 
-    if(req.cookies) {
+    if (req.cookies) {
         const cookies = parseCookie(req.cookies.toString());
 
-        if(!cookies.get("userID")) return client.release();
+        if (!cookies.get("userID")) return client.release();
 
         const userID = cookies.get("userID");
         const userQuery = "UPDATE users SET complaints = array_append(complaints, $1) WHERE id = $2";
@@ -42,5 +42,5 @@ export async function POST(req: NextRequest) {
 
     client.release()
 
-    return NextResponse.json({ message: "Complaint Submitted" }, {status: 200});
+    return NextResponse.json({ message: "Complaint Submitted" }, { status: 200 });
 }

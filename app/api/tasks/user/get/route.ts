@@ -25,7 +25,9 @@ export async function GET(req: NextRequest) {
     const adminResult = await client.query(adminQuery, adminValues);
     if (adminResult.rowCount === 0) return client.release(), NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const query = "SELECT * FROM tasks";
+    const taskIDs = adminResult.rows[0].tasks.join(",");
+
+    const query = `SELECT * FROM tasks WHERE id IN (${taskIDs});`;
     const result = await client.query(query);
 
     let tasks: Task[] = result.rows;

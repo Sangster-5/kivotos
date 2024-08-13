@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import ExcelJS, { Borders, BorderStyle } from 'exceljs';
+import ExcelJS, { Borders } from 'exceljs';
 import path from "path";
 import { existsSync, readFileSync, writeFile, writeFileSync } from "fs";
 import readStream from "@/lib/read-stream";
@@ -29,24 +29,24 @@ type Occupant = {
 };
 
 export async function POST(req: NextRequest) {
-    if(!req.body) return NextResponse.json({ message: "Bad Request" }, { status: 400 });
+    if (!req.body) return NextResponse.json({ error: "Bad Request" }, { status: 400 });
     const data = JSON.parse(await readStream(req.body));
 
     const filepath = path.join(process.cwd(), `/app/api/lease/3.1_Fixed_Term_Lease_TH_&_Apartment.xlsx`);
-    if(!existsSync(filepath)) return NextResponse.json({ message: "File not found, alert developer." }, {status: 404});
-    
+    if (!existsSync(filepath)) return NextResponse.json({ error: "File not found, alert developer." }, { status: 404 });
+
     const cookie = parseCookie(req.cookies.toString());
     const adminID = cookie.get("adminID");
     const adminUsername = cookie.get("adminUsername");
     const adminPassword = cookie.get("adminPassword");
 
     const client = await pool.connect();
-    if(!adminID || !adminUsername || !adminPassword) return client.release(), NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (!adminID || !adminUsername || !adminPassword) return client.release(), NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const adminQuery = "SELECT * FROM admin WHERE id = $1 AND username = $2 AND password = $3";
     const adminValues = [parseInt(decrypt(adminID)), decrypt(adminUsername), decrypt(adminPassword)];
     const adminResult = await client.query(adminQuery, adminValues);
-    
-    if(adminResult.rowCount === 0) return client.release(), NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+
+    if (adminResult.rowCount === 0) return client.release(), NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
 
     const query = "SELECT * FROM applications WHERE id = $1";
@@ -54,8 +54,8 @@ export async function POST(req: NextRequest) {
     const result = (await client.query(query, values));
     const tenants = result.rows[0].tenants;
     const occupants = result.rows[0].occupants
-    
-    if(result.rowCount === 0) return client.release(), NextResponse.json({ message: "Application not found" }, { status: 404 });
+
+    if (result.rowCount === 0) return client.release(), NextResponse.json({ error: "Application not found" }, { status: 404 });
     const application = result.rows[0];
 
     await client.query("UPDATE applications SET lease_created = $1 WHERE id = $2", [true, data.applicationId]);
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     await workbook.xlsx.readFile(filepath);
 
     const worksheet = workbook.getWorksheet(1);
-    if(!worksheet) return client.release(), NextResponse.json({ message: "Error processing the Excel file" }, { status: 500 });
+    if (!worksheet) return client.release(), NextResponse.json({ error: "Error processing the Excel file" }, { status: 500 });
 
     //Section 1
     const tenantNameFields = ["B23", "R23", "B26", "R26", "B28", "R28", "B30", "R30"];
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
     occupants.forEach((occupant: Occupant, index: number) => {
         //Double check if I should exclude tenants from occupants
         if (occupant.tenantName && !tenants.some((tenant: Tenant) => tenant.tenantFullname === occupant.tenantName)) {
-            if(tenantIndex % 2 === 0) {
+            if (tenantIndex % 2 === 0) {
                 worksheet.getCell(`B${38 + rowIndex}`).value = occupant.tenantName;
             } else {
                 worksheet.getCell(`R${38 + rowIndex}`).value = occupant.tenantName;
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
         worksheet.getCell("S16").value = "B3SOH4";
         worksheet.getCell("B16").value = "Halifax, NS";
         worksheet.getCell("B14").value = "372 Washmill Lake";
-        
+
         data.unitNumber ? masterUnitNumber = data.unitNumber : masterUnitNumber = parseInt(application.application_unit_number);
         worksheet.getCell("T51").value = masterUnitNumber;
 
@@ -141,10 +141,10 @@ export async function POST(req: NextRequest) {
         //Amenities Section 13
         worksheet.getCell("J210").value = "Garbage removal";
         worksheet.getCell("I210").border = thinBorder;
-        
+
         worksheet.getCell("S202").style = {}; worksheet.getCell("S204").style = {}; worksheet.getCell("S206").style = {};
 
-        worksheet.getCell("S200").value = "";  worksheet.getCell("T202").value = "";  worksheet.getCell("T204").value = "";  worksheet.getCell("T206").value = "";
+        worksheet.getCell("S200").value = ""; worksheet.getCell("T202").value = ""; worksheet.getCell("T204").value = ""; worksheet.getCell("T206").value = "";
         worksheet.getCell("AA202").style = {}; worksheet.getCell("AA204").style = {}; worksheet.getCell("AA206").style = {};
         worksheet.getCell("AB202").style = {}; worksheet.getCell("AB204").style = {}; worksheet.getCell("AB206").style = {};
         worksheet.getCell("AC202").style = {}; worksheet.getCell("AC204").style = {}; worksheet.getCell("AC206").style = {};
@@ -186,25 +186,26 @@ export async function POST(req: NextRequest) {
     worksheet.getCell("K160").value = `$${data.rentPrice}`;
 
     //Section 15 Security Deposit
-    worksheet.getCell("K248").value = `$${data.rentPrice/2}`;
+    worksheet.getCell("K248").value = `$${data.rentPrice / 2}`;
 
     workbook.xlsx.writeFile(path.join(process.cwd(), `leases/${data.applicationId}.xlsx`))
-    .then(() => {
-        console.log('Workbook saved successfully.');
-    })
-    .catch((error) => {
-        console.log('Error saving workbook:', error);
-    });
+        .then(() => {
+            console.log('Workbook saved successfully.');
+        })
+        .catch((error) => {
+            console.log('Error saving workbook:', error);
+            return client.release(), NextResponse.json({ error: "Error saving workbook" }, { status: 500 });
+        });
 
     const existingLease = await client.query("SELECT id FROM leases WHERE id = $1", [data.applicationId]);
-    if(existingLease.rows.length > 0) await client.query("DELETE FROM leases WHERE id = $1", [data.applicationId]);
+    if (existingLease.rows.length > 0) await client.query("DELETE FROM leases WHERE id = $1", [data.applicationId]);
 
     const leaseQuery = `INSERT INTO leases (id, unit, created_by, created_timestamp, effective_date, termination_date, rental_amount, "user", property, tenants, occupants, email, phone, deposit_amount) VALUES ($1, $2, $3, NOW(), $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`;
-    
-    const leaseValues = [data.applicationId, data.unitNumber ? masterUnitNumber = data.unitNumber : masterUnitNumber = parseInt(application.application_unit_number), adminResult.rows[0].id, new Date(data.initialMonth), new Date(data.endingDate), data.rentPrice, application.user_id, data.property, JSON.stringify(tenants), JSON.stringify(occupants), application.email_address, application.telephone_number, data.rentPrice/2];
+
+    const leaseValues = [data.applicationId, data.unitNumber ? masterUnitNumber = data.unitNumber : masterUnitNumber = parseInt(application.application_unit_number), adminResult.rows[0].id, new Date(data.initialMonth), new Date(data.endingDate), data.rentPrice, application.user_id, data.property, JSON.stringify(tenants), JSON.stringify(occupants), application.email_address, application.telephone_number, data.rentPrice / 2];
     const leaseResult = await client.query(leaseQuery, leaseValues);
-    
+
     client.release();
 
-    return NextResponse.json({ message: "Lease Created"}, { status: 200 });
+    return NextResponse.json({ message: "Lease Created" }, { status: 200 });
 }

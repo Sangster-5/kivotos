@@ -1,6 +1,7 @@
 'use client';
 
-import { ChangeEvent, MouseEventHandler, useEffect, useState } from 'react';
+import { ChangeEvent, MouseEventHandler, useCallback, useEffect, useState } from 'react';
+import { postRequest, getRequest } from '@/lib/fetch';
 
 interface User {
     id: number;
@@ -30,47 +31,107 @@ type TaskEmployee = {
 }
 
 const AdminLoginForm = () => {
+    //Session and View States
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<User | null>(null);
-
+    const [initialRender, setInitialRender] = useState(false);
     const [tabView, setTabView] = useState("tasks-tab");
 
+    //States
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [categories, setCategories] = useState<string[]>([]);
+    const [assignedEmployees, setAssignedEmployees] = useState<TaskEmployee[]>([]);
+    const [relevantEmployees, setRelevantEmployees] = useState<TaskEmployee[]>([]);
+    const [ranOnce, setRanOnce] = useState(false);
+    const [createTaskView, setCreateTaskView] = useState(false);
     const [applicationProgressFilter, setApplicationProgressFilter] = useState("In Progress");
     const [applicantSearchFilter, setApplicantSearchFilter] = useState("");
+    const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
+    const [complaints, setComplaints] = useState<Complaint[]>([]);
+    const [leases, setLeases] = useState<Lease[]>([]);
+    const [unitPropertyFilter, setUnitPropertyFilter] = useState("");
+    const [reportTypes, setReportTypes] = useState<string[]>([]);
 
-    const handleApplicantStatusFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        setApplicationProgressFilter(event.target.value);
-    }
 
-    const handleApplicantNameSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
-        setApplicantSearchFilter(event.target.value);
-    }
-
-    useEffect(() => {
-        if (document.cookie.includes("adminUsername") && document.cookie.includes("adminPassword") && !isLoggedIn) {
-            fetch("/api/auth/admin", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ validateCookie: true })
+    //Effects
+    const fetchCategories = () => {
+        getRequest("/api/tasks/category/get")
+            .then((data) => {
+                if (data.error) return console.warn(data);
+                setCategories(data);
             })
-                .then((res) => res.json())
-                .then((data) => {
-                    if (data.message === "Admin Cookie Validated") {
+    }
 
-                        setUser(data.user);
-                        setIsLoggedIn(true);
-                    }
+    const fetchTasks = (taskUser: User) => {
+        //Run backend check to ensure
+        if (!taskUser) return;
+        if (taskUser.tasks_admin) {
+            getRequest("/api/tasks/get")
+                .then((data) => {
+                    if (data.error) return console.warn(data);
+                    const tasks = data.tasks;
+                    setTasks(tasks);
                 })
-                .catch((error) => {
-                    console.log(error);
+        } else {
+            getRequest("/api/tasks/user/get")
+                .then((data) => {
+                    if (data.error) return console.warn(data);
+                    const tasks = data.tasks;
+                    setTasks(tasks);
                 });
         }
-    });
+    }
 
+    const fetchMaintenanceRequests = () => {
+        getRequest("/api/maintenance/get")
+            .then((data) => {
+                if (data.error) return console.warn(data);
+                setMaintenanceRequests(data.data);
+            })
+    }
 
+    const fetchComplaints = () => {
+        getRequest("/api/complaints/get")
+            .then((data) => {
+                if (data.error) return console.warn(data);
+                setComplaints(data.data);
+            })
+    }
+
+    const fetchLeases = () => {
+        getRequest("/api/lease/get")
+            .then((data) => {
+                if (data.error) return console.warn(data);
+                setLeases(data.data);
+            })
+    }
+
+    const fetchUpdates = (type: String = "both") => {
+        if (!user) return;
+        if (ranOnce) return;
+
+        switch (type) {
+            case "tasks":
+                fetchTasks(user);
+                break;
+
+            case "categories":
+                fetchCategories();
+                break;
+
+            default:
+                fetchCategories();
+                fetchTasks(user);
+                break;
+        }
+        setRanOnce(true);
+    }
+
+    useEffect(fetchUpdates, [user, ranOnce]);
+
+    //Filter States
+
+    // Handlers
     const handleLoginSubmit = (FormData: FormData) => {
         const data = {
             username: FormData.get("username"),
@@ -86,15 +147,7 @@ const AdminLoginForm = () => {
             return 0;
         }
 
-        fetch("/api/auth/admin", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        })
-            .then((res) => res.json())
+        postRequest("/api/auth/admin", data)
             .then((data) => {
                 if (data.message === "Admin Session Created") {
                     setUser(data.user);
@@ -119,123 +172,46 @@ const AdminLoginForm = () => {
         if (event.currentTarget.id !== tabView) setTabView(event.currentTarget.id);
     }
 
-    const [createTaskView, setCreateTaskView] = useState(false);
-    const handleCreateTaskClick = () => {
-        setCreateTaskView(true);
-    }
+    const handleSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        const value = event.currentTarget.value;
 
-    const [relevantEmployees, setRelevantEmployees] = useState<TaskEmployee[]>([]);
-    const handleEmployeeSearch = (event: ChangeEvent<HTMLInputElement>) => {
-        const data = { name: event.target.value };
-        fetch("/api/employee/name", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setRelevantEmployees(data);
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-    }
-    const [assignedEmployees, setAssignedEmployees] = useState<TaskEmployee[]>([]);
-    const handleEmployeeAssignation = (event: React.MouseEvent<HTMLDivElement>) => {
-        const id = event.currentTarget.id;
-        const name = event.currentTarget.children[0].textContent;
+        switch (tabView) {
+            case "tasks-tab":
+                if (event.currentTarget.parentElement?.parentElement) {
+                    const taskID = event.currentTarget.parentElement.parentElement.id;
 
-        setAssignedEmployees((prevAssignedEmployees) => {
-            if (prevAssignedEmployees.some(employee => employee.id === id)) return prevAssignedEmployees;
-
-            return [...prevAssignedEmployees, { id: id, name: name }];
-        });
-    }
-
-    const [ranOnce, setRanOnce] = useState(false);
-    const [categories, setCategories] = useState<string[]>([]);
-    const [tasks, setTasks] = useState<Task[]>([]);
-
-    const fetchUpdates = (type: String = "both", run: Boolean = false) => {
-        const fetchCategories = () => {
-            fetch("/api/tasks/category/get", {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
+                    const category = event.currentTarget.previousSibling?.previousSibling?.textContent
+                    postRequest("/api/tasks/update", { taskID, value, type: "status", source: "task", category: category })
+                        .then((data) => {
+                            if (data.error) return console.warn(data);
+                            if (!user) return;
+                            fetchTasks(user);
+                        })
                 }
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    setCategories(data);
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-        }
-        const fetchTasks = () => {
-            fetch("/api/tasks/get", {
-                method: "GET",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
+                break;
+
+            case "requests-tab":
+                if (event.currentTarget.parentElement) {
+
+                    const requestID = event.currentTarget.parentElement.id;
+                    const previousSibling = event.currentTarget.previousSibling as HTMLButtonElement;
+                    const data = { taskID: requestID, value, type: "status", source: "maintenance", isAlsoTask: false };
+
+                    if (previousSibling && requestID == previousSibling.id) data.isAlsoTask = true;
+                    postRequest("/api/tasks/update", data)
+                        .then((data) => {
+                            if (data.error) return console.warn(data);
+                            if (!user) return;
+                            fetchMaintenanceRequests();
+                            fetchTasks(user);
+                        })
                 }
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    const tasks = data.tasks;
-                    setTasks(tasks);
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
+                break;
+
+            default:
+                break;
         }
 
-        if (run || !ranOnce) {
-            switch (type) {
-                case "tasks":
-                    fetchTasks()
-                    break;
-
-                case "categories":
-                    fetchCategories();
-                    break;
-
-                default:
-                    fetchCategories()
-                    fetchTasks()
-                    break;
-            }
-            setRanOnce(true);
-        }
-    }
-
-    useEffect(fetchUpdates, [ranOnce, categories, setCategories, tasks, setTasks]);
-
-    const handleAddCategory = (FormData: FormData) => {
-        const category = FormData.get("createCategory");
-
-        if (!category) return console.log("No Category Provided");
-        if (categories.includes(category as string)) return console.log("Category Already Exists");
-
-        fetch("/api/tasks/category/add", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ category: category })
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                fetchUpdates("categories", true);
-            })
-            .catch((error) => {
-                console.log(error);
-            });
     }
 
     const handleSubmitTask = (FormData: FormData) => {
@@ -252,60 +228,90 @@ const AdminLoginForm = () => {
             maintenanceRequestsID: maintenanceRequestsID
         }
 
-        fetch("/api/tasks/create", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        })
-            .then((res) => res.json())
+        postRequest("/api/tasks/create", data)
             .then((data) => {
-                fetchUpdates("tasks", true);
+                if (data.error) return console.warn(data);
+                if (!user) return;
+                fetchTasks(user);
                 setTabView("tasks-tab");
+                setCreateTaskView(false);
             })
-            .catch((error) => {
-                console.log(error);
-            });
     }
 
-    const handleSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        const value = event.target.value;
-        if (event.target.parentElement && event.target.parentElement.parentElement) {
-            const taskID = event.target.parentElement.parentElement.id;
-            const category = event.target.parentElement.children[3].textContent || "";
-
-            fetch("/api/tasks/update", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ taskID, value, type: "status", category: category })
+    const handleEmployeeSearch = (event: ChangeEvent<HTMLInputElement>) => {
+        const data = { name: event.target.value };
+        postRequest("/api/employee/name", data)
+            .then((data) => {
+                if (data.error) return console.warn(data);
+                setRelevantEmployees(data);
             })
-                .then((res) => res.json())
+    }
+
+    const handleEmployeeAssignation = (event: React.MouseEvent<HTMLDivElement>) => {
+        const id = event.currentTarget.id;
+        const name = event.currentTarget.children[0].textContent;
+
+        setAssignedEmployees((prevAssignedEmployees) => {
+            if (prevAssignedEmployees.some(employee => employee.id === id)) return prevAssignedEmployees;
+
+            return [...prevAssignedEmployees, { id: id, name: name }];
+        });
+    }
+
+    const handleCreateTaskClick = () => {
+        setCreateTaskView(true);
+    }
+
+    const handleApplicantStatusFilterChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        setApplicationProgressFilter(event.target.value);
+    }
+
+    const handleApplicantNameSearchChange = (event: ChangeEvent<HTMLInputElement>) => {
+        setApplicantSearchFilter(event.target.value);
+    }
+
+    const unitPropertySelectorChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        setUnitPropertyFilter(event.target.value);
+    }
+
+    const generateReport = (event: React.MouseEvent<HTMLButtonElement>) => {
+        const report = (event.currentTarget.previousSibling as HTMLSelectElement)?.value;
+        postRequest("/api/reports/generate", { report, property: unitPropertyFilter })
+            .then((data) => {
+                if (data.error) return console.warn(data);
+                alert("Report Generated");
+            })
+    }
+
+    //End Handlers
+
+    useEffect(() => {
+        if (document.cookie.includes("adminUsername") && document.cookie.includes("adminPassword") && !isLoggedIn) {
+            postRequest("/api/auth/admin", { validateCookie: true })
                 .then((data) => {
-                    fetchUpdates("tasks", true);
+                    if (data.error) return console.warn(data);
+                    if (data.message === "Admin Cookie Validated") {
+
+                        setUser(data.user);
+                        setIsLoggedIn(true);
+                    }
+                    setInitialRender(true);
                 })
-                .catch((error) => {
-                    console.log(error);
-                });
-
-            fetchUpdates("tasks", true);
         }
-    }
 
-    const [categoryFilter, setCategoriesFilter] = useState("all");
-    const handleCategorySelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        const value = event.target.value;
-        setCategoriesFilter(value);
-    }
+        if (tabView == "unit-tab" && reportTypes.length == 0) {
+            getRequest("/api/reports/types")
+                .then((data) => {
+                    if (data.error) return console.warn(data);
+                    setReportTypes(data.columns);
+                })
+        }
+    });
 
     return (
         <>
-            {/* Admin Login */}
-            {!isLoggedIn && (
+            {!initialRender && <h1>Loading...</h1>}
+            {(initialRender && !isLoggedIn) && (
                 <>
                     <form action={handleLoginSubmit}>
                         <div>
@@ -332,190 +338,27 @@ const AdminLoginForm = () => {
                     <button onClick={redirectLogin}>Here by Accident?, Click for Tenant Login</button>
                 </>
             )}
-
-            {/* Admin Panel */}
-            {(isLoggedIn && user) && (
+            {(initialRender && isLoggedIn && user) && (
                 <>
                     <h1 className='px-20 text-2xl font-bold mt-4'>Welcome, {user.name}</h1>
 
                     <div className='flex flex-col w-full justify-center px-20 py-8 gap-y-2'>
                         <div className="flex flex-row gap-x-2">
-                            {/* Specify which admins can see what */}
                             <button id="tasks-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Tasks</button>
                             {user.approve_applications && <button id="applications-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Applications</button>}
                             {user.tasks_admin && <button id="requests-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Incoming Requests</button>}
                             {user.tasks_admin && <button id="complaints-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Complaints</button>}
-                            {user.tasks_admin && <button id="leases-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Leases</button>}
-                            {user.tasks_admin && <button id="unit-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Units</button>}
+                            {user.create_leases && <button id="leases-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Leases</button>}
+                            {user.create_leases && <button id="unit-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Units</button>}
                         </div>
                         <div className="flex flex-row">
-                            {/* Make it so other employees only see thier own tasks but tasks admins see all */}
                             {tabView == "tasks-tab" && (
                                 <section className='w-full'>
                                     <div className="bg-gray-100 p-8 flex flex-col">
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Tasks</h1>
                                         </div>
-                                        <div className="flex flex-row gap-x-2 mb-4">
-                                            <button className='bg-white px-4 py-2 rounded-lg shadow-md' onClick={handleCreateTaskClick}>Create Task</button>
-                                            <form action={handleAddCategory} className="relative">
-                                                <input type="text" name="createCategory" placeholder="New Category" className="bg-white px-10 py-2 rounded-lg shadow-md"></input>
-                                                <button className="absolute hover:cursor-pointer inset-y-0 left-0 flex items-center pl-3">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                                                        <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                            <select onChange={handleCategorySelectChange} className='bg-white px-4 py-2 rounded-lg shadow-md' name="categorySelect" id="categorySelect">
-                                                <option value="all">All Categories</option>
-                                                {categories.map((category, index) => (
-                                                    <option key={index} value={category}>
-                                                        {category}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-
-                                        {!createTaskView && (
-                                            <>
-                                                <div className="flex flex-row">
-                                                    <div className="flex flex-col w-1/3">
-                                                        <h1 className="flex flex-row font-bold">Todo</h1>
-                                                        <div className="row" id='todo-tasks'></div>
-                                                    </div>
-                                                    <div className="flex flex-col w-1/3">
-                                                        <h1 className="flex flex-row font-bold">In-Progress</h1>
-                                                        <div className="row" id='in-progress-tasks'></div>
-                                                    </div>
-                                                    <div className="flex flex-col w-1/3">
-                                                        <h1 className="flex flex-row font-bold">Complete</h1>
-                                                        <div className="row" id='complete-tasks'></div>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-row">
-                                                    <div className="flex flex-col w-1/3">
-                                                        {tasks.map((task, index) => {
-                                                            if (task.status != "todo") return;
-                                                            if (categoryFilter != "all" && task.category != categoryFilter) return;
-                                                            return (
-                                                                <div key={index} id={task.id.toString()} className='flex flex-row'>
-                                                                    <div className="flex flex-col">
-                                                                        <h1 className='flex flex-row'>{task.title}</h1>
-                                                                        <p className='flex flex-row'>{task.description}</p>
-                                                                        <p className='flex flex-row'>{task.assigned_employees}</p>
-                                                                        <p className='flex flex-row'>{task.category}</p>
-                                                                        <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
-                                                                            <option value="todo">Todo</option>
-                                                                            <option value="in-progress">In Progress</option>
-                                                                            <option value="completed">Completed</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>)
-                                                        })}
-                                                    </div>
-                                                    <div className="flex flex-col w-1/3">
-                                                        {tasks.map((task, index) => {
-                                                            if (task.status != "in-progress") return;
-                                                            if (categoryFilter != "all" && task.category != categoryFilter) return;
-                                                            return (
-                                                                <div key={index} id={task.id.toString()} className='flex flex-row'>
-                                                                    <div className="flex flex-col">
-                                                                        <h1 className='flex flex-row'>{task.title}</h1>
-                                                                        <p className='flex flex-row'>{task.description}</p>
-                                                                        <p className='flex flex-row'>{task.assigned_employees}</p>
-                                                                        <p className='flex flex-row'>{task.category}</p>
-                                                                        <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md'>
-                                                                            <option value="in-progress">In Progress</option>
-                                                                            <option value="completed">Completed</option>
-                                                                            <option value="todo">Todo</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
-                                                    <div className="flex flex-col w-1/3">
-                                                        {tasks.map((task, index) => {
-                                                            if (task.status != "completed") return;
-                                                            if (categoryFilter != "all" && task.category != categoryFilter) return;
-                                                            return (
-                                                                <div key={index} id={task.id.toString()} className='flex flex-row'>
-                                                                    <div className="flex flex-col">
-                                                                        <h1 className='flex flex-row'>{task.title}</h1>
-                                                                        <p className='flex flex-row'>{task.description}</p>
-                                                                        <p className='flex flex-row'>{task.assigned_employees}</p>
-                                                                        <p className='flex flex-row'>{task.category}</p>
-                                                                        <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                                                        <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md'>
-                                                                            <option value="completed">Completed</option>
-                                                                            <option value="todo">Todo</option>
-                                                                            <option value="in-progress">In Progress</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                            )
-                                                        })}
-                                                    </div>
-
-                                                </div>
-                                            </>
-                                        )}
-                                        {createTaskView && (
-                                            <form action={handleSubmitTask}>
-                                                <div className="flex flex-row gap-x-2">
-                                                    <div className="flex flex-col w-1/2">
-                                                        <label htmlFor="title">Task Title</label>
-                                                        <input name="title" type="text" />
-                                                    </div>
-                                                    <div className="flex flex-col w-1/2">
-                                                        <label htmlFor="categorySelect">Select Category</label>
-                                                        <select name="categorySelect" className='h-full' id="categorySelect">
-                                                            {categories.map((category, index) => (
-                                                                <option key={index} value={category}>
-                                                                    {category}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-row w-full mt-4">
-                                                    <textarea name="description" id="description" className='w-full' rows={10}></textarea>
-                                                </div>
-                                                <div className="flex flex-row mt-4 gap-x-4">
-                                                    <div className="flex flex-col w-1/2">
-                                                        <label htmlFor="employeeSearch">Assign Employees</label>
-                                                        <input type="text" name='employeeSearch' className='px-4 py-2' onChange={handleEmployeeSearch} />
-
-                                                        <div id='employeeRender' className='mt-4'>
-                                                            {relevantEmployees.length == 0 && (
-                                                                <h1>No Results</h1>
-                                                            )}
-                                                            {relevantEmployees.length > 0 && relevantEmployees.map((employee: TaskEmployee, index) => {
-                                                                return (
-                                                                    <div className='bg-white border-2 border-gray-100 px-4 py-2 rounded-sm flex flex-row' id={employee.id} key={index} onClick={handleEmployeeAssignation}>
-                                                                        <p id='employee-name' className='flex flex-col w-1/2'>{employee.name}</p>
-                                                                        <p className='border-2 rounded-md flex flex-col w-1/2 text-center hover:cursor-pointer'>Assign</p>
-                                                                    </div>
-                                                                )
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex flex-col w-1/2">
-                                                        <h1>Assigned Employees</h1>
-                                                        {assignedEmployees.length > 0 && (
-                                                            assignedEmployees.map((employee: TaskEmployee, index) => {
-                                                                return <h1 key={index}>{employee.name} - {employee.id}</h1>
-                                                            })
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="flex flex-row">
-                                                    <button type="submit" className='border-2 px-4 py-2 mt-4'>Submit Task</button>
-                                                </div>
-                                            </form>
-                                        )}
+                                        <Tasks tasks={tasks} categories={categories} fetchCategories={fetchCategories} handleSelectChange={handleSelectChange} handleSubmitTask={handleSubmitTask} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleCreateTaskClick={handleCreateTaskClick} createTaskView={createTaskView} />
                                     </div>
                                 </section>
                             )}
@@ -540,7 +383,7 @@ const AdminLoginForm = () => {
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Incoming Requests</h1>
                                         </div>
-                                        <MaintenanceRequests user={user} categories={categories} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleSubmitTask={handleSubmitTask} fetchUpdates={fetchUpdates} />
+                                        <MaintenanceRequests maintenanceRequests={maintenanceRequests} fetchMaintenanceRequests={fetchMaintenanceRequests} user={user} categories={categories} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleSubmitTask={handleSubmitTask} handleSelectChange={handleSelectChange} />
                                     </div>
                                 </section>
                             )}
@@ -550,51 +393,364 @@ const AdminLoginForm = () => {
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Incoming Complaints</h1>
                                         </div>
-                                        <Complaints />
+                                        <Complaints complaints={complaints} fetchComplaints={fetchComplaints} />
                                     </div>
                                 </section>
                             )}
-                            {(tabView == "leases-tab" && user.tasks_admin && user.create_leases) && (
+                            {(tabView == "leases-tab" && user.create_leases) && (
                                 <section className='w-full'>
                                     <div className="bg-gray-100 p-8 flex flex-col">
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Leases</h1>
                                         </div>
-                                        <Leases />
+                                        <Leases fetchLeases={fetchLeases} leases={leases} />
                                     </div>
                                 </section>
                             )}
                             {(tabView == "unit-tab" && user.tasks_admin) && (
                                 <section className='w-full'>
-                                    <div className="bg-gray-100 p-8 flex flex-col">
+                                    <div className="bg-gray-100 p-8 flex flex-col gap-y-2">
                                         <div className="flex flex-row">
                                             <h1 className="text-2xl font-bold mb-8">Units</h1>
                                         </div>
-                                        <Units />
+                                        <div className="flex flex-row gap-x-2">
+                                            <select onChange={unitPropertySelectorChange} name="propertySelector" id="propertySelector" className='flex flex-col w-2/5 px-2 py-1 rounded-md'>
+                                                <option value="all">All</option>
+                                                <option value="theArborVictorianLiving">The Arbor Victorian Living</option>
+                                                <option value="arborVitaliaCourtyard">Arbor Vitalia Courtyard</option>
+                                            </select>
+                                            <select name="generateReportSelector" id="generateReportSelector" className='w-1/5 px-2 py-1 rounded-md'>
+                                                <option value="rent-roll">Rent Roll</option>
+                                                {reportTypes.map((reportType, index) => {
+                                                    return (
+                                                        <option key={index} value={reportType}>
+                                                            {reportType.replaceAll("_", " ")}
+                                                        </option>
+                                                    )
+                                                })}
+                                            </select>
+                                            <button onClick={generateReport} className='bg-white rounded-md px-4 py-1'>Generate</button>
+                                        </div>
+
+                                        <Units unitPropertyFilter={unitPropertyFilter} />
                                     </div>
                                 </section>
                             )}
                         </div>
                     </div>
                 </>
-            )
-            }
 
-            {/* Check if user is allowed to approve applications, create leases. Then task panel / create task */}
+            )}
         </>
     );
 };
 
 export default AdminLoginForm;
 
-const Units: React.FC = () => {
+interface TasksProps {
+    categories: string[];
+    handleSelectChange: (event: ChangeEvent<HTMLSelectElement>) => void;
+    handleSubmitTask: (FormData: FormData) => void;
+    handleEmployeeSearch: (event: ChangeEvent<HTMLInputElement>) => void;
+    relevantEmployees: TaskEmployee[];
+    handleEmployeeAssignation: (event: React.MouseEvent<HTMLDivElement>) => void;
+    assignedEmployees: TaskEmployee[];
+    tasks: Task[];
+    fetchCategories: () => void;
+    handleCreateTaskClick: () => void;
+    createTaskView: boolean;
+}
 
-    const fetchUnits = () => { }
+const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handleSelectChange, handleSubmitTask, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleCreateTaskClick, createTaskView }) => {
+    //States
+    const [categoryFilter, setCategoriesFilter] = useState("all");
 
-    useEffect(fetchUnits, []);
+    //Effects
+
+    //Handlers
+    const handleAddCategory = async (FormData: FormData) => {
+        const category = FormData.get("createCategory");
+
+        if (!category) return console.log("No Category Provided");
+        if (categories.includes(category as string)) return console.log("Category Already Exists");
+
+        // Traditional Method:
+        // const data = await postRequest("/api/tasks/category/add", { category: category })
+        // if (data.error) return console.warn(data);
+        // console.log(data);
+
+        postRequest("/api/tasks/category/add", { category: category })
+            .then(data => {
+                if (data.error) return console.warn(data);
+                fetchCategories();
+            })
+    }
+
+    const handleCategorySelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
+        const value = event.target.value;
+        setCategoriesFilter(value);
+    }
+
+    //End Handlers
 
     return (
-        <h1>No Units Uploaded</h1>
+        <>
+            <div className="flex flex-row gap-x-2 mb-4">
+                <button className='bg-white px-4 py-2 rounded-lg shadow-md' onClick={handleCreateTaskClick}>Create Task</button>
+                <form action={handleAddCategory} className="relative">
+                    <input type="text" name="createCategory" placeholder="New Category" className="bg-white px-10 py-2 rounded-lg shadow-md"></input>
+                    <button className="absolute hover:cursor-pointer inset-y-0 left-0 flex items-center pl-3">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
+                        </svg>
+                    </button>
+                </form>
+                <select onChange={handleCategorySelectChange} className='bg-white px-4 py-2 rounded-lg shadow-md' name="categorySelect" id="categorySelect">
+                    <option value="all">All Categories</option>
+                    {categories.map((category, index) => (
+                        <option key={index} value={category}>
+                            {category}
+                        </option>
+                    ))}
+                </select>
+            </div>
+            {!createTaskView && (
+                <>
+                    <div className="flex flex-row">
+                        <div className="flex flex-col w-1/3">
+                            <h1 className="flex flex-row font-bold">Todo</h1>
+                            <div className="row" id='todo-tasks'></div>
+                        </div>
+                        <div className="flex flex-col w-1/3">
+                            <h1 className="flex flex-row font-bold">In-Progress</h1>
+                            <div className="row" id='in-progress-tasks'></div>
+                        </div>
+                        <div className="flex flex-col w-1/3">
+                            <h1 className="flex flex-row font-bold">Complete</h1>
+                            <div className="row" id='complete-tasks'></div>
+                        </div>
+                    </div>
+                    <div className="flex flex-row">
+                        <div className="flex flex-col w-1/3">
+                            {tasks.map((task, index) => {
+                                if (task.status != "todo") return;
+                                if (categoryFilter != "all" && task.category != categoryFilter) return;
+                                return (
+                                    <div key={index} id={task.id.toString()} className='flex flex-row'>
+                                        <div className="flex flex-col">
+                                            <h1 className='flex flex-row'>{task.title}</h1>
+                                            <p className='flex flex-row'>{task.description}</p>
+                                            <p className='flex flex-row'>{task.assigned_employees}</p>
+                                            <p className='flex flex-row'>{task.category}</p>
+                                            <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                                            <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
+                                                <option value="todo">Todo</option>
+                                                <option value="in-progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                            </select>
+                                        </div>
+                                    </div>)
+                            })}
+                        </div>
+                        <div className="flex flex-col w-1/3">
+                            {tasks.map((task, index) => {
+                                if (task.status != "in-progress") return;
+                                if (categoryFilter != "all" && task.category != categoryFilter) return;
+                                return (
+                                    <div key={index} id={task.id.toString()} className='flex flex-row'>
+                                        <div className="flex flex-col">
+                                            <h1 className='flex flex-row'>{task.title}</h1>
+                                            <p className='flex flex-row'>{task.description}</p>
+                                            <p className='flex flex-row'>{task.assigned_employees}</p>
+                                            <p className='flex flex-row'>{task.category}</p>
+                                            <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                                            <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md'>
+                                                <option value="in-progress">In Progress</option>
+                                                <option value="completed">Completed</option>
+                                                <option value="todo">Todo</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                        <div className="flex flex-col w-1/3">
+                            {tasks.map((task, index) => {
+                                if (task.status != "completed") return;
+                                if (categoryFilter != "all" && task.category != categoryFilter) return;
+                                return (
+                                    <div key={index} id={task.id.toString()} className='flex flex-row'>
+                                        <div className="flex flex-col">
+                                            <h1 className='flex flex-row'>{task.title}</h1>
+                                            <p className='flex flex-row'>{task.description}</p>
+                                            <p className='flex flex-row'>{task.assigned_employees}</p>
+                                            <p className='flex flex-row'>{task.category}</p>
+                                            <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                                            <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md'>
+                                                <option value="completed">Completed</option>
+                                                <option value="todo">Todo</option>
+                                                <option value="in-progress">In Progress</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+
+                    </div>
+                </>
+            )}
+            {createTaskView && (
+                <form action={handleSubmitTask}>
+                    <div className="flex flex-row gap-x-2">
+                        <div className="flex flex-col w-1/2">
+                            <label htmlFor="title">Task Title</label>
+                            <input name="title" type="text" />
+                        </div>
+                        <div className="flex flex-col w-1/2">
+                            <label htmlFor="categorySelect">Select Category</label>
+                            <select name="categorySelect" className='h-full' id="categorySelect">
+                                {categories.map((category, index) => (
+                                    <option key={index} value={category}>
+                                        {category}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="flex flex-row w-full mt-4">
+                        <textarea name="description" id="description" className='w-full' rows={10}></textarea>
+                    </div>
+                    <div className="flex flex-row mt-4 gap-x-4">
+                        <div className="flex flex-col w-1/2">
+                            <label htmlFor="employeeSearch">Assign Employees</label>
+                            <input type="text" name='employeeSearch' className='px-4 py-2' onChange={handleEmployeeSearch} />
+
+                            <div id='employeeRender' className='mt-4'>
+                                {relevantEmployees.length == 0 && (
+                                    <h1>No Results</h1>
+                                )}
+                                {relevantEmployees.length > 0 && relevantEmployees.map((employee: TaskEmployee, index) => {
+                                    return (
+                                        <div className='bg-white border-2 border-gray-100 px-4 py-2 rounded-sm flex flex-row' id={employee.id} key={index} onClick={handleEmployeeAssignation}>
+                                            <p id='employee-name' className='flex flex-col w-1/2'>{employee.name}</p>
+                                            <p className='border-2 rounded-md flex flex-col w-1/2 text-center hover:cursor-pointer'>Assign</p>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                        <div className="flex flex-col w-1/2">
+                            <h1>Assigned Employees</h1>
+                            {assignedEmployees.length > 0 && (
+                                assignedEmployees.map((employee: TaskEmployee, index) => {
+                                    return <h1 key={index}>{employee.name} - {employee.id}</h1>
+                                })
+                            )}
+                        </div>
+                    </div>
+                    <div className="flex flex-row">
+                        <button type="submit" className='border-2 px-4 py-2 mt-4'>Submit Task</button>
+                    </div>
+                </form>
+            )}
+        </>
+    )
+}
+
+type Tenant = {
+    tenantFullname: string | null;
+    tenantOccupation: string | null;
+    tenantEmploymentType: string | null;
+    tenantEmployer: string | null;
+    tenantEmployerAddress: string | null;
+    tenantEmploymentDuration: string | null;
+    tenantAnnualIncome: number;
+    tenantBusinessTelephone: string | null;
+    tenantBank: string | null;
+    tenantBankBranch: string | null;
+};
+
+type Occupant = {
+    tenantName: string | null;
+    tenantRelationship: string | null;
+    tenantAge: number | null;
+    tenantEmail: string | null;
+};
+
+type Unit = {
+    id: number;
+    leases: number[];
+    email: string;
+    phone: string;
+    unit: string;
+    property: string;
+    active_lease: number;
+    occupants: Occupant[];
+    tenants: Tenant[];
+    maintenance_requests: number[];
+    active_lease_start: Date;
+    active_lease_end: Date;
+    current_rent: number;
+    past_rent: number[];
+}
+
+interface UnitsProps {
+    unitPropertyFilter: string;
+}
+
+const Units: React.FC<UnitsProps> = ({ unitPropertyFilter }) => {
+    const [units, setUnits] = useState([]);
+
+    const fetchUnits = () => {
+        getRequest("/api/units")
+            .then((data) => {
+                //Resolved
+                setUnits(data.units);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
+
+    useEffect(fetchUnits);
+
+    return (
+        <>
+            {units.map((unit: Unit, index) => {
+                if (unitPropertyFilter == "" || unit.property == unitPropertyFilter)
+                    return (
+                        <div key={index} className="flex flex-row gap-x-2 w-full">
+                            <div className='w-full flex flex-col gap-y-2'>
+                                <div className="flex flex-row w-full">
+                                    <div className="flex flex-col w-1/3">
+                                        <h1>{unit.unit} - {unit.property == "theArborVictorianLiving" ? "Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                    </div>
+                                    <div className="flex flex-col text-end w-2/3">
+                                        <h1>{unit.tenants.map(tenant => tenant.tenantFullname + " ")}</h1>
+                                    </div>
+                                </div>
+                                <div className="flex flex-row">
+                                    <h1 className='flex flex-col w-1/5'>Rent: ${unit.current_rent}</h1>
+                                    <h1 className='flex flex-col w-4/5 text-end'>Lease Term: {new Date(unit.active_lease_start).toLocaleDateString()} - {new Date(unit.active_lease_end).toLocaleDateString()}</h1>
+                                </div>
+                                <div className="flex flex-row">
+                                    <div className="flex flex-col w-1/2" >
+                                        <h1>
+                                            <a href={`tel:+${unit.phone}`}>{unit.phone}</a> - <a href={`mailto:${unit.email}`}>{unit.email}</a>
+                                        </h1>
+                                    </div>
+
+
+                                    <a className="flex flex-col underline w-1/2 text-end" download={unit.active_lease} href={`/api/files?type=lease&filename=${unit.active_lease}.xlsx`}>Download Lease</a>
+                                </div>
+                            </div>
+                        </div>
+                    );
+            })
+            }
+        </>
+
     )
 }
 
@@ -608,30 +764,20 @@ type Complaint = {
     action_timestamp: Date;
 }
 
-//Consider converting to tasks?
-const Complaints: React.FC = () => {
-    const [ranOnce, setRanOnce] = useState(false);
-    const [complaints, setComplaints] = useState<Complaint[]>([]);
-    const fetchMaintenanceRequests = (runAnyways: boolean = false) => {
-        if (ranOnce) return;
-        fetch("/api/complaints/get", {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setComplaints(data.data);
-                setRanOnce(true);
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-    }
+interface ComplaintsProps {
+    complaints: Complaint[];
+    fetchComplaints: () => void;
+}
 
-    useEffect(fetchMaintenanceRequests, [ranOnce, complaints, setComplaints]);
+//Consider converting to tasks?
+const Complaints: React.FC<ComplaintsProps> = ({ complaints, fetchComplaints }) => {
+    const [ranOnce, setRanOnce] = useState(false);
+
+    useEffect(() => {
+        if (ranOnce) return;
+        fetchComplaints();
+        setRanOnce(true);
+    }, [setRanOnce, fetchComplaints, ranOnce]);
 
     const [typeFilter, setTypeFilter] = useState("all");
     const handleTypeChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -724,33 +870,19 @@ interface MaintenanceRequestProps {
     handleEmployeeAssignation: (event: React.MouseEvent<HTMLDivElement>) => void;
     assignedEmployees: TaskEmployee[];
     handleSubmitTask: (FormData: FormData) => void;
-    fetchUpdates: (type: String, run: Boolean) => void;
+    handleSelectChange: (event: ChangeEvent<HTMLSelectElement>) => void;
+    fetchMaintenanceRequests: () => void;
+    maintenanceRequests: MaintenanceRequest[];
 }
 
-const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categories, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleSubmitTask, fetchUpdates }) => {
+const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ maintenanceRequests, user, categories, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleSubmitTask, handleSelectChange, fetchMaintenanceRequests }) => {
     const [ranOnce, setRanOnce] = useState(false);
-    const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
 
-    const fetchMaintenanceRequests = (runAnyways: Boolean = false) => {
-        if (ranOnce && (ranOnce && !runAnyways)) return;
-        fetch("/api/maintenance/get", {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setMaintenanceRequests(data.data);
-                setRanOnce(true);
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-    }
-
-    useEffect(fetchMaintenanceRequests, [ranOnce, maintenanceRequests, setMaintenanceRequests]);
+    useEffect(() => {
+        if (ranOnce) return;
+        fetchMaintenanceRequests();
+        setRanOnce(true);
+    }, [setRanOnce, fetchMaintenanceRequests, ranOnce]);
 
     const [requestToTaskForm, setRequestToTaskForm] = useState(false);
     const [taskData, setTaskData] = useState<Task | null>(null);
@@ -774,30 +906,6 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
         }
         setTaskData(taskData);
         setRequestToTaskForm(true);
-    }
-
-    const handleSelectChange = (event: ChangeEvent<HTMLSelectElement>) => {
-        const value = event.currentTarget.value;
-
-        if (event.currentTarget.parentElement) {
-            const requestID = event.currentTarget.parentElement.id;
-            fetch("/api/tasks/update", {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ taskID: requestID, value, type: "status", source: "maintenance" })
-            })
-                .then((res) => res.json())
-                .then((data) => {
-                    fetchMaintenanceRequests(true);
-                    fetchUpdates("tasks", true);
-                })
-                .catch((error) => {
-                    console.log(error);
-                });
-        }
     }
 
     return (<div className="flex flex-row gap-x-2">
@@ -872,7 +980,7 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
                                         <p id='description'>{request.description}</p>
                                         <p id='property'>{request.property}</p>
                                         <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
-                                        {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                        {!request.is_task && <button className='border-2 px-4 py-2 bg-white' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
                                         <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
                                             <option value="todo">Todo</option>
                                             <option value="in-progress">In Progress</option>
@@ -895,7 +1003,7 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
                                         <h1 id='unit'>{request.unit}</h1>
                                         <p id='description'>{request.description}</p>
                                         <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
-                                        {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                        {!request.is_task && <button className='border-2 px-4 py-2 bg-white' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
                                         <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md flex flex-row'>
                                             <option value="todo">Todo</option>
                                             <option value="in-progress">In Progress</option>
@@ -918,7 +1026,7 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ user, categori
                                         <h1 id='unit'>{request.unit}</h1>
                                         <p id='description'>{request.description}</p>
                                         <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
-                                        {!request.is_task && <button className='border-2 px-4 py-2' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                        {!request.is_task && <button className='border-2 px-4 py-2 bg-white' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
                                         <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md flex flex-row'>
                                             <option value="todo">Todo</option>
                                             <option value="in-progress">In Progress</option>
@@ -948,55 +1056,33 @@ type Lease = {
     signed: boolean;
 }
 
-const Leases: React.FC = () => {
-    const [leases, setLeases] = useState<Lease[]>([]);
+interface LeasesProps {
+    leases: Lease[];
+    fetchLeases: (refresh?: boolean) => void;
+}
+
+const Leases: React.FC<LeasesProps> = ({ leases, fetchLeases }) => {
     const [ranOnce, setRanOnce] = useState(false);
 
-    const fetchLeases = (runAnyways: Boolean = false) => {
-        if (ranOnce && !runAnyways) return;
-        fetch("/api/lease/get", {
-            method: "GET",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-            .then((res) => res.json())
-            .then((data) => {
-                setLeases(data.data);
-                setRanOnce(true);
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-    }
-
-    useEffect(fetchLeases, [ranOnce, leases, setLeases])
+    useEffect(() => {
+        if (ranOnce) return;
+        fetchLeases();
+        setRanOnce(true);
+    }, [setRanOnce, fetchLeases, ranOnce])
 
     const handleLeaseConfirmation = (event: React.MouseEvent<HTMLButtonElement>) => {
         const id = event.currentTarget.parentElement?.id;
         if (!id) return;
 
-        fetch("/api/lease/confirm", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ id })
-        })
-            .then((res) => res.json())
+        postRequest("/api/lease/confirm", { id: id })
             .then((data) => {
+                if (data.error) return console.warn(data);
                 fetchLeases(true);
             })
-            .catch((error) => {
-                console.log(error);
-            });
     }
 
     return (
         <>
-            {/* // Seperate by timeframe until expiration for ongoing leases (3months, 1month maybe 6?) */}
             <div className="flex flex-row gap-x-2">
                 <select name="leaseTimeFrame" id="leaseTimeFrame" defaultValue="ongoing" className='mb-4 px-4 py-1 rounded-md'>
                     <option value="all">All</option>
@@ -1038,13 +1124,6 @@ const Leases: React.FC = () => {
                                         <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
                                         <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
                                         {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
-                                        {/* 
-                                        * Make button to set lease as signed, attach to unit in table
-                                        * Add download lease button here as well, copy from applications
-                                        * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
-                                        * Store application ID (maybe)
-                                        * Sort by how closre to expiration, maybe filter by property
-                                    */}
                                     </div>
                                 </div>
                             )
@@ -1070,13 +1149,6 @@ const Leases: React.FC = () => {
                                         <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
                                         <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
                                         {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
-                                        {/* 
-                                        * Make button to set lease as signed, attach to unit in table
-                                        * Add download lease button here as well, copy from applications
-                                        * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
-                                        * Store application ID (maybe)
-                                        * Sort by how closre to expiration, maybe filter by property
-                                    */}
                                     </div>
                                 </div>
                             )
@@ -1102,13 +1174,6 @@ const Leases: React.FC = () => {
                                         <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
                                         <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
                                         {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
-                                        {/* 
-                                        * Make button to set lease as signed, attach to unit in table
-                                        * Add download lease button here as well, copy from applications
-                                        * Have tenants in unit table, lease, rent amount, (maybe maintenance requests), (less maybe complaints)
-                                        * Store application ID (maybe)
-                                        * Sort by how closre to expiration, maybe filter by property
-                                    */}
                                     </div>
                                 </div>
                             )
@@ -1232,76 +1297,40 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
 
     if (previousFilters.statusFilter !== statusFilter || previousFilters.nameFilter !== nameFilter) {
         setPreviousFilters({ nameFilter, statusFilter });
-        fetch("/api/application/filter", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ statusFilter, nameFilter })
-        })
-            .then((res) => res.json())
+        postRequest("api/application/filter", { statusFilter, nameFilter })
             .then((data) => {
+                if (data.error) return console.warn(data.error);
                 setApplications(data.applications);
             })
-            .catch((error) => {
-                console.log(error);
-            });
     }
 
     const handleApproval = (event: React.MouseEvent<HTMLButtonElement>) => {
         const applicationId = event.currentTarget.id;
 
-        fetch("/api/application/approve", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ applicationId })
-        })
-            .then((res) => res.json())
+        postRequest("api/application/approve", { applicationId })
             .then((data) => {
+                if (data.error) return console.warn(data.error);
                 setPreviousFilters({ nameFilter, statusFilter });
-                fetch("/api/application/filter", {
-                    method: "POST",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ statusFilter, nameFilter })
-                })
-                    .then((res) => res.json())
+                postRequest("api/application/filter", { statusFilter, nameFilter })
                     .then((data) => {
+                        if (data.error) return console.warn(data.error);
                         setApplications(data.applications);
-                    })
-                    .catch((error) => {
-                        console.log(error);
                     });
             })
-            .catch((error) => {
-                console.log(error);
-            });
     };
 
     const handleDeny = (event: React.MouseEvent<HTMLButtonElement>) => {
         const applicationId = event.currentTarget.id;
 
-        fetch("/api/application/deny", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({ applicationId })
-        })
-            .then((res) => res.json())
+        postRequest("api/application/deny", { applicationId })
             .then((data) => {
-                //Handle Approval Denial
+                if (data.error) return console.warn(data.error);
+                postRequest("api/application/filter", { statusFilter, nameFilter })
+                    .then((data) => {
+                        if (data.error) return console.warn(data.error);
+                        setApplications(data.applications);
+                    });
             })
-            .catch((error) => {
-                console.log(error);
-            });
     };
 
     const handleCreateLeaseClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -1309,10 +1338,10 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
         setCreateLease(true);
     };
 
-    // const findUserIDByApplicationId = (applicationID: string) => {
-    //     const application = applications.find((app: RentalApplication) => app.id === applicationID);
-    //     return application ? application.user_id : null
-    // };
+    const findUserIDByApplicationId = (applicationID: string) => {
+        const application = applications.find((app: RentalApplication) => app.id === applicationID);
+        return application ? application.user_id : null
+    };
 
     const handleCreateLeaseSubmit = (FormData: FormData) => {
         const data = {
@@ -1324,22 +1353,17 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
             applicationId: leaseForm,
         }
 
-        fetch("/api/lease/create", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(data)
-        })
-            .then((res) => res.json())
+        postRequest("api/lease/create", data)
             .then((data) => {
-                location.reload();
-                //Handle Lease Created
+                if (data.error) return console.warn(data.error);
+                setCreateLease(false);
+                postRequest("api/application/filter", { statusFilter, nameFilter })
+                    .then((data) => {
+                        if (data.error) return console.warn(data.error);
+                        setApplications(data.applications);
+                    });
+                //Refetch leases?
             })
-            .catch((error) => {
-                console.log(error);
-            });
     }
 
     return (
@@ -1398,7 +1422,6 @@ const RentalApplications: React.FC<RentalApplicationProps> = ({ statusFilter, na
                     </div>
                 )
             }
-            {/* Show yet to be reviewed ones (filtered by dropdown), search by name of user. */}
         </div >
     )
 }

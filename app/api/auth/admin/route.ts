@@ -6,7 +6,7 @@ import { encrypt, decrypt } from '@/lib/encryption-keys';
 
 
 const POST = async (request: NextRequest) => {
-    if(!request.body) return NextResponse.json({message: "Invalid Credentials"}, {status: 400});
+    if (!request.body) return NextResponse.json({ error: "Invalid Credentials" }, { status: 400 });
 
     const data = JSON.parse(await readStream(request.body));
 
@@ -15,19 +15,19 @@ const POST = async (request: NextRequest) => {
     const client = await pool.connect();
 
 
-    if(data.validateCookie) {
+    if (data.validateCookie) {
         const username = cookieStore.get('adminUsername');
         const password = cookieStore.get('adminPassword');
         const adminID = cookieStore.get('adminID');
-        
-        if(!username || !password || !adminID) return client.release(), NextResponse.json({message: "Invalid Cookie"}, {status: 400}); 
-        
+
+        if (!username || !password || !adminID) return client.release(), NextResponse.json({ error: "Invalid Cookie" }, { status: 400 });
+
         const values = [decrypt(username.value), decrypt(password.value), decrypt(adminID.value)];
         const query = "SELECT * FROM admin WHERE username = $1 AND password = $2 AND id = $3";
         const result = await client.query(query, values);
-    
-        if(result.rows.length < 1) return client.release(), NextResponse.json({message: "Invalid Cookie",}, {status: 401});
-        if(result.rows[0].id === parseInt(decrypt(adminID.value))) {
+
+        if (result.rows.length < 1) return client.release(), NextResponse.json({ error: "Invalid Cookie", }, { status: 401 });
+        if (result.rows[0].id === parseInt(decrypt(adminID.value))) {
             const user = {
                 id: parseInt(result.rows[0].id),
                 username: result.rows[0].username,
@@ -38,18 +38,18 @@ const POST = async (request: NextRequest) => {
             }
             client.release();
 
-            return NextResponse.json({message: "Admin Cookie Validated", user: user}, {status: 200});
+            return NextResponse.json({ message: "Admin Cookie Validated", user: user }, { status: 200 });
         } else {
             client.release();
-            return NextResponse.json({message: "Unauthorized",}, {status: 401});
+            return NextResponse.json({ error: "Unauthorized", }, { status: 401 });
         }
-    
+
     } else {
         const values = [data.username, data.password];
         const query = "SELECT * FROM admin WHERE username = $1 AND password = $2";
         const result = await client.query(query, values);
 
-        if(result.rows.length >= 1) {
+        if (result.rows.length >= 1) {
             const user = {
                 id: result.rows[0].id,
                 username: result.rows[0].username,
@@ -58,17 +58,17 @@ const POST = async (request: NextRequest) => {
                 create_leases: result.rows[0].create_leases,
                 tasks_admin: result.rows[0].tasks_admin
             }
-        
+
             cookieStore.set('adminUsername', encrypt(user.username as string));
             cookieStore.set('adminPassword', encrypt(result.rows[0].password as string));
             cookieStore.set('adminID', encrypt(user.id.toString()));
             client.release();
 
-            return NextResponse.json({message: "Admin Session Created", user: user}, {status: 200});
-          } else  {
+            return NextResponse.json({ message: "Admin Session Created", user: user }, { status: 200 });
+        } else {
             client.release();
-            return NextResponse.json({message: "Invalid Credentials"}, {status: 400});
-          }
+            return NextResponse.json({ error: "Invalid Credentials" }, { status: 400 });
+        }
     }
 }
 
