@@ -2,6 +2,12 @@
 
 import { ChangeEvent, MouseEventHandler, useCallback, useEffect, useState } from 'react';
 import { postRequest, getRequest } from '@/lib/fetch';
+import { Raleway } from 'next/font/google';
+import '@/app/globals.css';
+import Carousel from '../Carousel';
+
+const r700 = Raleway({ subsets: ['latin'], weight: "700" });
+const r600 = Raleway({ subsets: ['latin'], weight: "600" });
 
 interface User {
     id: number;
@@ -177,8 +183,8 @@ const AdminLoginForm = () => {
 
         switch (tabView) {
             case "tasks-tab":
-                if (event.currentTarget.parentElement?.parentElement) {
-                    const taskID = event.currentTarget.parentElement.parentElement.id;
+                if (event.currentTarget.parentElement) {
+                    const taskID = event.currentTarget.parentElement.id;
 
                     const category = event.currentTarget.previousSibling?.previousSibling?.textContent
                     postRequest("/api/tasks/update", { taskID, value, type: "status", source: "task", category: category })
@@ -287,6 +293,7 @@ const AdminLoginForm = () => {
 
     useEffect(() => {
         if (document.cookie.includes("adminUsername") && document.cookie.includes("adminPassword") && !isLoggedIn) {
+
             postRequest("/api/auth/admin", { validateCookie: true })
                 .then((data) => {
                     if (data.error) return console.warn(data);
@@ -297,6 +304,8 @@ const AdminLoginForm = () => {
                     }
                     setInitialRender(true);
                 })
+        } else {
+            setInitialRender(true);
         }
 
         if (tabView == "unit-tab" && reportTypes.length == 0) {
@@ -306,10 +315,10 @@ const AdminLoginForm = () => {
                     setReportTypes(data.columns);
                 })
         }
-    });
+    }, [isLoggedIn, tabView, reportTypes.length, setInitialRender]);
 
     return (
-        <>
+        <div className='min-h-[85vh] bg-custom-gradient'>
             {!initialRender && <h1>Loading...</h1>}
             {(initialRender && !isLoggedIn) && (
                 <>
@@ -340,37 +349,42 @@ const AdminLoginForm = () => {
             )}
             {(initialRender && isLoggedIn && user) && (
                 <>
-                    <h1 className='px-20 text-2xl font-bold mt-4'>Welcome, {user.name}</h1>
+                    <h1 className={'px-20 text-3xl font-bold py-8 text-white ' + r700.className}>Welcome, {user.name}</h1>
 
-                    <div className='flex flex-col w-full justify-center px-20 py-8 gap-y-2'>
+                    <div className='flex flex-col w-full justify-center px-20 pb-8 gap-y-2'>
                         <div className="flex flex-row gap-x-2">
-                            <button id="tasks-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Tasks</button>
-                            {user.approve_applications && <button id="applications-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Applications</button>}
-                            {user.tasks_admin && <button id="requests-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Incoming Requests</button>}
-                            {user.tasks_admin && <button id="complaints-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Complaints</button>}
-                            {user.create_leases && <button id="leases-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Leases</button>}
-                            {user.create_leases && <button id="unit-tab" onClick={handleTabBtnClick} className='border-2 px-2'>Units</button>}
+                            <button id="tasks-tab" onClick={handleTabBtnClick} className='bg-white rounded-md h-8 px-4'>Tasks</button>
+                            {user.approve_applications && <button id="applications-tab" onClick={handleTabBtnClick} className='bg-white rounded-md h-8 px-4'>Applications</button>}
+                            {user.tasks_admin && <button id="requests-tab" onClick={handleTabBtnClick} className='bg-white rounded-md h-8 px-4'>Incoming Requests</button>}
+                            {user.tasks_admin && <button id="complaints-tab" onClick={handleTabBtnClick} className='bg-white rounded-md h-8 px-4'>Complaints</button>}
+                            {user.create_leases && <button id="leases-tab" onClick={handleTabBtnClick} className='bg-white rounded-md h-8 px-4'>Leases</button>}
+                            {user.create_leases && <button id="unit-tab" onClick={handleTabBtnClick} className='bg-white rounded-md h-8 px-4'>Units</button>}
                         </div>
                         <div className="flex flex-row">
                             {tabView == "tasks-tab" && (
                                 <section className='w-full'>
-                                    <div className="bg-gray-100 p-8 flex flex-col">
+                                    <div className="bg-[#192F3D] p-8 flex flex-col rounded-md">
                                         <div className="flex flex-row">
-                                            <h1 className="text-2xl font-bold mb-8">Tasks</h1>
+                                            <h1 className={"text-2xl text-white font-bold mb-6"}>Tasks</h1>
                                         </div>
                                         <Tasks tasks={tasks} categories={categories} fetchCategories={fetchCategories} handleSelectChange={handleSelectChange} handleSubmitTask={handleSubmitTask} handleEmployeeSearch={handleEmployeeSearch} relevantEmployees={relevantEmployees} handleEmployeeAssignation={handleEmployeeAssignation} assignedEmployees={assignedEmployees} handleCreateTaskClick={handleCreateTaskClick} createTaskView={createTaskView} />
                                     </div>
                                 </section>
                             )}
                             {(tabView == "applications-tab" && user.approve_applications) && (
-                                <section className='flex flex-col'>
-                                    <div className='flex flex-row gap-x-2'>
-                                        <select onChange={handleApplicantStatusFilterChange} defaultValue="In Progress" className='border-2 px-2' name="filter-applicant-status" id="filter-applicant-status">
-                                            <option value="In Progress">In Progress</option>
-                                            <option value="Accepted">Accepted</option>
-                                            <option value="Rejected">Rejected</option>
-                                        </select>
-                                        <input onChange={handleApplicantNameSearchChange} className='border-2 px-2' type="text" name='search-applicant-name' id='search-applicant-name' placeholder='Search Applicant' />
+                                <section className='w-full'>
+                                    <div className='bg-[#192F3D] p-8 flex flex-col rounded-md'>
+                                        <div className="flex flex-row">
+                                            <h1 className={"text-2xl text-white font-bold mb-6"}>Applications</h1>
+                                        </div>
+                                        <div className='flex gap-x-2'>
+                                            <select onChange={handleApplicantStatusFilterChange} defaultValue="In Progress" className='h-8 px-2 rounded-md' name="filter-applicant-status" id="filter-applicant-status">
+                                                <option value="In Progress">In Progress</option>
+                                                <option value="Accepted">Accepted</option>
+                                                <option value="Rejected">Rejected</option>
+                                            </select>
+                                            <input onChange={handleApplicantNameSearchChange} className='h-8 px-2 rounded-md' type="text" name='search-applicant-name' id='search-applicant-name' placeholder='Search Applicant' />
+                                        </div>
                                     </div>
                                     <div className="flex flex-row mt-2">
                                         <RentalApplications statusFilter={applicationProgressFilter} nameFilter={applicantSearchFilter} user={user} />
@@ -441,7 +455,7 @@ const AdminLoginForm = () => {
                 </>
 
             )}
-        </>
+        </div>
     );
 };
 
@@ -496,16 +510,17 @@ const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handl
     return (
         <>
             <div className="flex flex-row gap-x-2 mb-4">
-                <button className='bg-white px-4 py-2 rounded-lg shadow-md' onClick={handleCreateTaskClick}>Create Task</button>
+                <button onClick={handleCreateTaskClick} className={'bg-[#00AF5B] text-sm text-white w-32 h-8 rounded-md shadow-md ' + r600.className}>Create Task</button>
+                {/* <button>New Worker</button> */}
                 <form action={handleAddCategory} className="relative">
-                    <input type="text" name="createCategory" placeholder="New Category" className="bg-white px-10 py-2 rounded-lg shadow-md"></input>
-                    <button className="absolute hover:cursor-pointer inset-y-0 left-0 flex items-center pl-3">
+                    <input type="text" name="createCategory" placeholder="New Category" className="bg-white h-8 w-64 px-8 rounded-lg shadow-md"></input>
+                    <button className="absolute hover:cursor-pointer top-[15%] left-0 flex items-center pl-3">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                         </svg>
                     </button>
                 </form>
-                <select onChange={handleCategorySelectChange} className='bg-white px-4 py-2 rounded-lg shadow-md' name="categorySelect" id="categorySelect">
+                <select onChange={handleCategorySelectChange} className='bg-white flex items-center h-8 w-48 px-4 rounded-lg shadow-md' name="categorySelect" id="categorySelect">
                     <option value="all">All Categories</option>
                     {categories.map((category, index) => (
                         <option key={index} value={category}>
@@ -516,144 +531,174 @@ const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handl
             </div>
             {!createTaskView && (
                 <>
-                    <div className="flex flex-row">
-                        <div className="flex flex-col w-1/3">
-                            <h1 className="flex flex-row font-bold">Todo</h1>
-                            <div className="row" id='todo-tasks'></div>
-                        </div>
-                        <div className="flex flex-col w-1/3">
-                            <h1 className="flex flex-row font-bold">In-Progress</h1>
-                            <div className="row" id='in-progress-tasks'></div>
-                        </div>
-                        <div className="flex flex-col w-1/3">
-                            <h1 className="flex flex-row font-bold">Complete</h1>
-                            <div className="row" id='complete-tasks'></div>
-                        </div>
+                    <h1 className='text-lg text-white'>Todo</h1>
+                    <div className='grid grid-cols-auto mt-1'>
+                        <Carousel items={tasks.filter((task) => task.status === "todo")} taskSelectCallback={handleSelectChange} />
                     </div>
-                    <div className="flex flex-row">
-                        <div className="flex flex-col w-1/3">
-                            {tasks.map((task, index) => {
-                                if (task.status != "todo") return;
-                                if (categoryFilter != "all" && task.category != categoryFilter) return;
-                                return (
-                                    <div key={index} id={task.id.toString()} className='flex flex-row'>
-                                        <div className="flex flex-col">
-                                            <h1 className='flex flex-row'>{task.title}</h1>
-                                            <p className='flex flex-row'>{task.description}</p>
-                                            <p className='flex flex-row'>{task.assigned_employees}</p>
-                                            <p className='flex flex-row'>{task.category}</p>
-                                            <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                            <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
-                                                <option value="todo">Todo</option>
-                                                <option value="in-progress">In Progress</option>
-                                                <option value="completed">Completed</option>
-                                            </select>
-                                        </div>
-                                    </div>)
-                            })}
-                        </div>
-                        <div className="flex flex-col w-1/3">
-                            {tasks.map((task, index) => {
-                                if (task.status != "in-progress") return;
-                                if (categoryFilter != "all" && task.category != categoryFilter) return;
-                                return (
-                                    <div key={index} id={task.id.toString()} className='flex flex-row'>
-                                        <div className="flex flex-col">
-                                            <h1 className='flex flex-row'>{task.title}</h1>
-                                            <p className='flex flex-row'>{task.description}</p>
-                                            <p className='flex flex-row'>{task.assigned_employees}</p>
-                                            <p className='flex flex-row'>{task.category}</p>
-                                            <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                            <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md'>
-                                                <option value="in-progress">In Progress</option>
-                                                <option value="completed">Completed</option>
-                                                <option value="todo">Todo</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                        <div className="flex flex-col w-1/3">
-                            {tasks.map((task, index) => {
-                                if (task.status != "completed") return;
-                                if (categoryFilter != "all" && task.category != categoryFilter) return;
-                                return (
-                                    <div key={index} id={task.id.toString()} className='flex flex-row'>
-                                        <div className="flex flex-col">
-                                            <h1 className='flex flex-row'>{task.title}</h1>
-                                            <p className='flex flex-row'>{task.description}</p>
-                                            <p className='flex flex-row'>{task.assigned_employees}</p>
-                                            <p className='flex flex-row'>{task.category}</p>
-                                            <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
-                                            <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md'>
-                                                <option value="completed">Completed</option>
-                                                <option value="todo">Todo</option>
-                                                <option value="in-progress">In Progress</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                )
-                            })}
-                        </div>
 
+                    <h1 className='mt-4 text-lg text-white'>In Progress</h1>
+                    <div className='grid auto-cols- mt-1'>
+                        <Carousel items={tasks.filter((task) => task.status === "in-progress")} taskSelectCallback={handleSelectChange} />
+                    </div>
+
+                    <h1 className='mt-4 text-lg text-white'>Completed</h1>
+                    <div>
+                        <Carousel items={tasks.filter((task) => task.status === "completed")} taskSelectCallback={handleSelectChange} />
                     </div>
                 </>
-            )}
-            {createTaskView && (
-                <form action={handleSubmitTask}>
-                    <div className="flex flex-row gap-x-2">
-                        <div className="flex flex-col w-1/2">
-                            <label htmlFor="title">Task Title</label>
-                            <input name="title" type="text" />
-                        </div>
-                        <div className="flex flex-col w-1/2">
-                            <label htmlFor="categorySelect">Select Category</label>
-                            <select name="categorySelect" className='h-full' id="categorySelect">
-                                {categories.map((category, index) => (
-                                    <option key={index} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    </div>
-                    <div className="flex flex-row w-full mt-4">
-                        <textarea name="description" id="description" className='w-full' rows={10}></textarea>
-                    </div>
-                    <div className="flex flex-row mt-4 gap-x-4">
-                        <div className="flex flex-col w-1/2">
-                            <label htmlFor="employeeSearch">Assign Employees</label>
-                            <input type="text" name='employeeSearch' className='px-4 py-2' onChange={handleEmployeeSearch} />
-
-                            <div id='employeeRender' className='mt-4'>
-                                {relevantEmployees.length == 0 && (
-                                    <h1>No Results</h1>
-                                )}
-                                {relevantEmployees.length > 0 && relevantEmployees.map((employee: TaskEmployee, index) => {
-                                    return (
-                                        <div className='bg-white border-2 border-gray-100 px-4 py-2 rounded-sm flex flex-row' id={employee.id} key={index} onClick={handleEmployeeAssignation}>
-                                            <p id='employee-name' className='flex flex-col w-1/2'>{employee.name}</p>
-                                            <p className='border-2 rounded-md flex flex-col w-1/2 text-center hover:cursor-pointer'>Assign</p>
-                                        </div>
-                                    )
-                                })}
+                // <>
+                //     <div className="flex flex-row">
+                //         <div className="flex flex-col w-1/3">
+                //             <h1 className="flex flex-row font-bold">Todo</h1>
+                //             <div className="row" id='todo-tasks'></div>
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             <h1 className="flex flex-row font-bold">In-Progress</h1>
+                //             <div className="row" id='in-progress-tasks'></div>
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             <h1 className="flex flex-row font-bold">Complete</h1>
+                //             <div className="row" id='complete-tasks'></div>
+                //         </div>
+                //     </div>
+                //     <div className="flex flex-row">
+                //         <div>
+                //             {tasks.map((task, index) => {
+                //                 return (
+                //                     <div className='flex flex-row'>
+                //                         <h1>{task.title}</h1>
+                //                         <h1>{task.category}</h1>
+                //                         <h1>{task.status}</h1>
+                //                     </div>
+                //                 )
+                //             })}
+                //         </div>
+                //         <>{/* <div className="flex flex-col w-1/3">
+                //             {tasks.map((task, index) => {
+                //                 if (task.status != "todo") return;
+                //                 if (categoryFilter != "all" && task.category != categoryFilter) return;
+                //                 return (
+                //                     <div key={index} id={task.id.toString()} className='flex flex-row'>
+                //                         <div className="flex flex-col">
+                //                             <h1 className='flex flex-row'>{task.title}</h1>
+                //                             <p className='flex flex-row'>{task.description}</p>
+                //                             <p className='flex flex-row'>{task.assigned_employees}</p>
+                //                             <p className='flex flex-row'>{task.category}</p>
+                //                             <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                //                             <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
+                //                                 <option value="todo">Todo</option>
+                //                                 <option value="in-progress">In Progress</option>
+                //                                 <option value="completed">Completed</option>
+                //                             </select>
+                //                         </div>
+                //                     </div>)
+                //             })}
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             {tasks.map((task, index) => {
+                //                 if (task.status != "in-progress") return;
+                //                 if (categoryFilter != "all" && task.category != categoryFilter) return;
+                //                 return (
+                //                     <div key={index} id={task.id.toString()} className='flex flex-row'>
+                //                         <div className="flex flex-col">
+                //                             <h1 className='flex flex-row'>{task.title}</h1>
+                //                             <p className='flex flex-row'>{task.description}</p>
+                //                             <p className='flex flex-row'>{task.assigned_employees}</p>
+                //                             <p className='flex flex-row'>{task.category}</p>
+                //                             <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                //                             <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md'>
+                //                                 <option value="in-progress">In Progress</option>
+                //                                 <option value="completed">Completed</option>
+                //                                 <option value="todo">Todo</option>
+                //                             </select>
+                //                         </div>
+                //                     </div>
+                //                 )
+                //             })}
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             {tasks.map((task, index) => {
+                //                 if (task.status != "completed") return;
+                //                 if (categoryFilter != "all" && task.category != categoryFilter) return;
+                //                 return (
+                //                     <div key={index} id={task.id.toString()} className='flex flex-row'>
+                //                         <div className="flex flex-col">
+                //                             <h1 className='flex flex-row'>{task.title}</h1>
+                //                             <p className='flex flex-row'>{task.description}</p>
+                //                             <p className='flex flex-row'>{task.assigned_employees}</p>
+                //                             <p className='flex flex-row'>{task.category}</p>
+                //                             <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                //                             <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md'>
+                //                                 <option value="completed">Completed</option>
+                //                                 <option value="todo">Todo</option>
+                //                                 <option value="in-progress">In Progress</option>
+                //                             </select>
+                //                         </div>
+                //                     </div>
+                //                 )
+                //             })}
+                //         </div> */}
+                //         </>
+                //     </div>
+                // </>
+            )
+            }
+            {
+                createTaskView && (
+                    <form action={handleSubmitTask}>
+                        <div className="flex flex-row gap-x-2">
+                            <div className="flex flex-col w-1/2">
+                                <label htmlFor="title">Task Title</label>
+                                <input name="title" type="text" />
+                            </div>
+                            <div className="flex flex-col w-1/2">
+                                <label htmlFor="categorySelect">Select Category</label>
+                                <select name="categorySelect" className='h-full' id="categorySelect">
+                                    {categories.map((category, index) => (
+                                        <option key={index} value={category}>
+                                            {category}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
-                        <div className="flex flex-col w-1/2">
-                            <h1>Assigned Employees</h1>
-                            {assignedEmployees.length > 0 && (
-                                assignedEmployees.map((employee: TaskEmployee, index) => {
-                                    return <h1 key={index}>{employee.name} - {employee.id}</h1>
-                                })
-                            )}
+                        <div className="flex flex-row w-full mt-4">
+                            <textarea name="description" id="description" className='w-full' rows={10}></textarea>
                         </div>
-                    </div>
-                    <div className="flex flex-row">
-                        <button type="submit" className='border-2 px-4 py-2 mt-4'>Submit Task</button>
-                    </div>
-                </form>
-            )}
+                        <div className="flex flex-row mt-4 gap-x-4">
+                            <div className="flex flex-col w-1/2">
+                                <label htmlFor="employeeSearch">Assign Employees</label>
+                                <input type="text" name='employeeSearch' className='px-4 py-2' onChange={handleEmployeeSearch} />
+
+                                <div id='employeeRender' className='mt-4'>
+                                    {relevantEmployees.length == 0 && (
+                                        <h1>No Results</h1>
+                                    )}
+                                    {relevantEmployees.length > 0 && relevantEmployees.map((employee: TaskEmployee, index) => {
+                                        return (
+                                            <div className='bg-white border-2 border-gray-100 px-4 py-2 rounded-sm flex flex-row' id={employee.id} key={index} onClick={handleEmployeeAssignation}>
+                                                <p id='employee-name' className='flex flex-col w-1/2'>{employee.name}</p>
+                                                <p className='border-2 rounded-md flex flex-col w-1/2 text-center hover:cursor-pointer'>Assign</p>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                            <div className="flex flex-col w-1/2">
+                                <h1>Assigned Employees</h1>
+                                {assignedEmployees.length > 0 && (
+                                    assignedEmployees.map((employee: TaskEmployee, index) => {
+                                        return <h1 key={index}>{employee.name} - {employee.id}</h1>
+                                    })
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex flex-row">
+                            <button type="submit" className='border-2 px-4 py-2 mt-4'>Submit Task</button>
+                        </div>
+                    </form>
+                )
+            }
         </>
     )
 }

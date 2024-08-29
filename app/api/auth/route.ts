@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
 
     let user;
     if (result.rows.length >= 1) {
+      console.log("here")
       user = result.rows[0];
 
       cookieStore.set('email', encrypt(user.email));

@@ -1,6 +1,8 @@
 Change complaint title
-Make so only correct employees see their tasks.
+Finish displaying references when reviewing applications
 
 Reports:
 (Ask about period for rent roll)
 - Rent Roll: Look at correct period (consider start and end date, check older leases)
+
+convert to gradient

@@ -12,11 +12,12 @@ export async function POST(req: NextRequest) {
     const client = await pool.connect();
 
     const query = "INSERT INTO maintenance_requests (id, tenant_name, unit, description, date_time, permission, created_timestamp, status, property) VALUES ($1, $2, $3, $4, $5, $6, NOW(), $7, $8)";
-    const values = [generateUserID(), data.name, data.unit, data.description, data.dateAndTime, data.permission, "todo", data.property];
+    const values = [generateUserID(), data.name, data.unit, data.description, data.dateAndTime == "" ? null : data.dateAndTime, data.permission, "todo", data.property];
     const result = await client.query(query, values);
 
     const cookies = parseCookie(req.cookies.toString());
     if (cookies.get("userID")) {
+        console.log("User is logged in");
         const userID = decrypt(cookies.get("userID") as string);
 
         const userQuery = "UPDATE users SET maintenance = array_append(maintenance, $1) WHERE id = $2";

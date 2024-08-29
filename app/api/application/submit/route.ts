@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
 
     await Promise.all(saveFilePromises);
 
-    console.log(userID, applicationID, files);
 
     const data = {
         name: formData.get('name'),
@@ -61,19 +60,9 @@ export async function POST(request: NextRequest) {
         vehicle2: formData.get('vehicle2'),
         vehicle3: formData.get('vehicle3'),
         tenants: formData.get('tenants'),
-        personalRef1Name: formData.get('personalRef1Name'),
-        personalRef1Address: formData.get('personalRef1Address'),
-        personalRef1Telephone: formData.get('personalRef1Telephone'),
-        personalRef1Relationship: formData.get('personalRef1Relationship'),
-        personalRef1HowLong: formData.get('personalRef1HowLong'),
-        professionalRefName: formData.get('personalRef2Name'),
-        professionalRefAddress: formData.get('personalRef2Address'),
-        professionalRefTelephone: formData.get('personalRef2Telephone'),
-        professionalRefRelationship: formData.get('personalRef2Relationship'),
-        professionalRefHowLong: formData.get('personalRef2HowLong'),
-        landlordName: formData.get('personalRef3Name'),
-        landlordAddress: formData.get('personalRef3Address'),
-        landlordTelephone: formData.get('personalRef3Telephone'),
+        landlordName: formData.get('landlordName'),
+        landlordAddress: formData.get('landlordAddress'),
+        landlordTelephone: formData.get('landlordTelephone'),
         emergencyContactName: formData.get('emergencyContactName'),
         emergencyContactAddress: formData.get('emergencyContactAddress'),
         emergencyContactTelephone: formData.get('emergencyContactTelephone'),
@@ -88,7 +77,11 @@ export async function POST(request: NextRequest) {
         kivotosEmail: formData.get('kivotosEmail'),
         kivotosPassword: formData.get('kivotosPassword'),
         timestamp: new Date().toISOString(),
-        property: formData.get('property')
+        property: formData.get('property'),
+        references: formData.get('references'),
+        number_cheques_nsf: parseInt(formData.get('numberChequesNsf') as string) ? parseInt(formData.get('numberChequesNsf') as string) : 0,
+        number_late_payments: parseInt(formData.get('numberLatePayments') as string) ? parseInt(formData.get('numberLatePayments') as string) : 0,
+        moving_reason: formData.get('movingReason')
     };
 
     try {
@@ -100,16 +93,14 @@ export async function POST(request: NextRequest) {
             intended_rental_duration, present_residence_type, present_ownership_type, present_inhabitance_period, 
             marital_status, present_rental_amount, number_of_occupants, application_unit_number, 
             approximate_occupancy_date, broken_lease, broken_lease_reason, refused_pay_rent, filled_bankruptcy, first_choice_unit, 
-            second_choice_unit, monthly_rental, vehicle_1, vehicle_2, vehicle_3, personal_ref_name, personal_ref_address, 
-            personal_ref_telephone, personal_ref_relationship, personal_ref_how_long, professional_ref_name, professional_ref_address, 
-            professional_ref_telephone, professional_ref_relationship, professional_ref_how_long, landlord_name, landlord_address, 
+            second_choice_unit, monthly_rental, vehicle_1, vehicle_2, vehicle_3, landlord_name, landlord_address, 
             landlord_telephone, emergency_contact_name, emergency_contact_address, emergency_contact_phone, 
             permission_contact_references, drivers_license_sin, pay_stubs, tax_return, holding_fee, applicant_signature, user_id, id, timestamp,
-            tenants, occupants, property
+            tenants, occupants, property, "references", number_cheques_nsf, number_late_payments, moving_reason
         ) VALUES (
             $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, 
             $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, 
-            $43, $44, $45, $46, $47, $48, $49, $50, $51, $52, $53
+            $43, $44
         ) RETURNING *;
         `;
 
@@ -118,14 +109,14 @@ export async function POST(request: NextRequest) {
             data.rentalDuration, data.residenceType, data.ownershipType, data.howLong, data.maritalStatus,
             data.presentRental, data.occupants, data.unitNumber, data.occupancyDate, data.brokenLease,
             data.brokenLeaseReason, data.refusedToPayRent, data.filedForBankruptcy, data.firstChoice, data.secondChoice,
-            data.monthlyRental, data.vehicle1, data.vehicle2, data.vehicle3, data.personalRef1Name, data.personalRef1Address,
-            data.personalRef1Telephone, data.personalRef1Relationship, data.personalRef1HowLong, data.professionalRefName,
-            data.professionalRefAddress, data.professionalRefTelephone, data.professionalRefRelationship,
-            data.professionalRefHowLong, data.landlordName, data.landlordAddress, data.landlordTelephone,
-            data.emergencyContactName, data.emergencyContactAddress, data.emergencyContactTelephone,
+            data.monthlyRental, data.vehicle1, data.vehicle2, data.vehicle3, data.landlordName, data.landlordAddress,
+            data.landlordTelephone, data.emergencyContactName, data.emergencyContactAddress, data.emergencyContactTelephone,
             data.permissionContactReferences, data.driversLicenseOrSin, data.payStubs, data.taxReturn, data.holdingFee,
-            data.applicantSignature, data.userId, data.applicationID, data.timestamp, data.tenants, data.occupantsData, data.property
+            data.applicantSignature, data.userId, data.applicationID, data.timestamp, data.tenants, data.occupantsData,
+            data.property, data.references, data.number_cheques_nsf, data.number_late_payments, data.moving_reason
         ];
+
+        console.log(query, values);
 
         const insertUserResult = await client.query(`INSERT INTO users (id, email, password, application_id, name) VALUES (${userID}, '${formData.get("kivotosEmail")}', '${formData.get("kivotosPassword")}', ${applicationID}, '${data.name}')`);
 

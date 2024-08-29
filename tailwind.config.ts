@@ -8,9 +8,13 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      
+      backgroundImage: {
+        'custom-gradient': 'linear-gradient(38deg, #C6C2B3 6.99%, #A7A59B 93.28%)',
+      },
     },
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/aspect-ratio'),
+  ],
 };
 export default config;

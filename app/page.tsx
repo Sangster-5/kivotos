@@ -2,6 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/formatDate";
+import { postRequest } from "@/lib/fetch";
+import { Junge, Poppins } from "next/font/google";
+import Image from "next/image";
+
+const j400 = Junge({ subsets: ["latin"], weight: "400" })
+const p400 = Poppins({ subsets: ["latin"], weight: "400" })
 
 type User = {
   email: string;
@@ -14,6 +20,7 @@ let userDetails: User;
 
 const Home = () => {
   const [loggedIn, setLoggedIn] = useState(false);
+  const [ranOnce, setRanOnce] = useState(false);
 
   useEffect(() => {
     const checkSession = () => {
@@ -24,29 +31,19 @@ const Home = () => {
 
     const data = { validateCookie: true };
 
-    if (!checkSession()) window.location.href = "/login";
-    fetch("/api/auth", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    })
-      .then((res) => res.json())
+    //if (!checkSession()) window.location.href = "/login";
+    postRequest("/api/auth", data)
       .then((data) => {
-        if (data.message === "Invalid Cookie") return location.replace("/login");
+        //if (data.error) return location.replace("/login");
         userDetails = data.user;
         setLoggedIn(true);
+        setRanOnce(true);
       })
-      .catch((error) => {
-        console.log(error)
-      });
   });
 
   return (
     <div>
-      {loggedIn && userDetails ? (
+      {ranOnce ? (loggedIn && userDetails ? (
         <div className="ml-12 mt-12">
           <h1 className="flex flex-row text-2xl font-bold mb-2">Welcome, {userDetails.name}</h1>
 
@@ -58,14 +55,26 @@ const Home = () => {
           {userDetails.tenant ? <h1>Tenant</h1> : <ApplicationView applicationID={userDetails.applicationID} />}
 
         </div>
-      ) : (
-        <h1>Loading...</h1>
-      )}
-    </div>
+      ) : <VisitorLandingPage />) : (<h1>Loading...</h1>)}
+    </div >
   );
 }
 
 export default Home;
+
+const VisitorLandingPage: React.FC = () => {
+  return (
+
+    <div id="landing-bg" className="w-full flex flex-col justify-center gap-y-4">
+      <h1 className={"text-white text-6xl py-5 " + j400.className}>Welcome To The Arbor Group</h1>
+      <Image layout="fill" src="/landing-logo.png" className="h-3/5 relative left-8" alt="" />
+      <div className="flex flex-row gap-x-10">
+        <a href="/login" className={"bg-[#23323B] px-6 py-2 rounded-full w-32 text-white text-xs text-center " + p400.className}>Login</a>
+        <a href="/apply" className={"bg-[#E1CD9D] px-6 py-2 rounded-full w-32 text-white text-xs text-center " + p400.className}>Apply</a>
+      </div>
+    </div>
+  );
+}
 
 interface ApplicationViewProps {
   applicationID: number;
@@ -153,15 +162,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
   const [application, setApplication] = useState<Application | undefined>(undefined);
 
   useEffect(() => {
-    fetch("/api/application", {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ applicationID })
-    })
-      .then((res) => res.json())
+    postRequest("/api/application", { applicationID })
       .then((data) => {
         setApplication(data.application);
       })
