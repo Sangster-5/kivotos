@@ -25,18 +25,6 @@ button {
     align-items: center;
 }
 
-#maintenance-bg {
-    background-image: url('/Backgrounds/landing-bg.png');
-    /* background-size: cover; */
-    background-position: center;
-    background-repeat: repeat;
-    min-height: 95vh;
-    /* height: 100%; */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 #admin-bg {
     background-image: url('/Backgrounds/landing-bg.png');
     background-size: auto;

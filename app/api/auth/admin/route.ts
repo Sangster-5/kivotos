@@ -6,6 +6,7 @@ import { encrypt, decrypt } from '@/lib/encryption-keys';
 
 
 const POST = async (request: NextRequest) => {
+
     if (!request.body) return NextResponse.json({ error: "Invalid Credentials" }, { status: 400 });
 
     const data = JSON.parse(await readStream(request.body));
@@ -13,7 +14,6 @@ const POST = async (request: NextRequest) => {
     const cookieStore = cookies();
 
     const client = await pool.connect();
-
 
     if (data.validateCookie) {
         const username = cookieStore.get('adminUsername');

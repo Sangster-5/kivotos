@@ -27,18 +27,18 @@ const MaintenancePage = () => {
 
     return (
         <div>
-            <div id="maintenance-bg">
+            <div className="bg-custom-gradient-1 md:h-full h-screen flex justify-center py-0 md:py-8">
                 {!submitted && (
-                    <form action={handleMaintenanceRequestSubmition} className="w-[55%] min-h-[90%] py-8 flex flex-col bg-[#A09D8F] px-10 rounded-md gap-y-4 text-white">
+                    <form action={handleMaintenanceRequestSubmition} className="w-full md:w-[55%] min-h-[90%] py-8 flex flex-col bg-[#A09D8F] px-8 md:px-10 rounded-md gap-y-4 text-white">
                         <h1 className={"flex flex-row text-3xl font-bold text-white " + r600.className} > Maintenance Requests</h1>
 
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-                            <div className="grid grid-rows-2">
+                            <div className="grid col-span-2 md:col-span-1 grid-rows-2">
                                 <label htmlFor="name">Name</label>
                                 <input type="text" name="name" required className="bg-[#868374] rounded-md h-8" />
                             </div>
 
-                            <div className="grid grid-rows-2">
+                            <div className="grid col-span-2 md:col-span-1 grid-rows-2">
                                 <label htmlFor="unit">Unit</label>
                                 <input type="text" name="unit" className="bg-[#868374] rounded-md h-8" />
                             </div>
@@ -46,11 +46,11 @@ const MaintenancePage = () => {
                                 <label htmlFor="description">Description</label>
                                 <textarea rows={10} name="description" required className="bg-[#868374] p-2 w-full rounded-md" />
                             </div>
-                            <div>
+                            <div className="col-span-2 md:col-span-1 md:block">
                                 <label htmlFor="dateAndTime">Day/Time Frame</label>
                                 <input type="datetime-local" name="dateAndTime" id="dateAndTime" className="bg-[#868374] rounded-md h-8 w-full p-2 border-white" />
                             </div>
-                            <div>
+                            <div className="col-span-2 md:col-span-1 md:block">
                                 <label htmlFor="property">Property</label>
                                 <select required name="property" className="bg-[#868374] h-8 rounded-md w-full">
                                     <option value="theArborVictorianLiving">The Arbor Victorian Living</option>

@@ -8,6 +8,8 @@ export async function POST(request: NextRequest) {
     if (!request.body) return NextResponse.json({ error: "Invalid Request" }, { status: 400 });
     const applicationID = JSON.parse(await readStream(request.body)).applicationID as number;
 
+    const referer = request.headers.get("referer");
+
     const cookieStore = cookies();
     let adminID = cookieStore.get("adminID")?.value
     if (cookieStore && adminID) {
@@ -42,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     if (!result.rows[0].id) return NextResponse.json({ error: "Invalid application ID" }, { status: 400 });
     const application = result.rows[0];
-    if (userID !== application["user_id"]) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    if (userID !== application["user_id"] || adminID) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
     return NextResponse.json({ message: "Application Fetched", application }, { status: 200 });
 }

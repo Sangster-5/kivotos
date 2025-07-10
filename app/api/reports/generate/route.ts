@@ -42,7 +42,8 @@ export async function POST(req: NextRequest) {
     switch (report) {
         case "rent-roll":
             units.rows.map((unit, index) => {
-                worksheet.getCell(`B${index + 3}`).value = unit.current_rent;
+                if (data.property !== unit.property && data.property !== "all") return;
+                worksheet.getCell(`B${index + 3}`).value = `$${unit.current_rent}`;
                 worksheet.getCell(`C${index + 3}`).value = unit.unit;
                 worksheet.getCell(`D${index + 3}`).value = unit.tenants[0].tenantFullname;
                 worksheet.getCell(`H${index + 3}`).value = unit.phone;

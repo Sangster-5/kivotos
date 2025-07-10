@@ -8,7 +8,7 @@ import { decrypt } from '@/lib/encryption-keys';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const type = searchParams.get('type');
-  const filename = decodeURIComponent(searchParams.get('filename') as string);
+  let filename = decodeURIComponent(searchParams.get('filename') as string);
 
   const cookies = parseCookie(req.cookies.toString());
   if (!type || !filename) return NextResponse.json({ error: 'Type & Filename Required' }, { status: 400 });
@@ -24,6 +24,20 @@ export async function GET(req: NextRequest) {
 
     case "lease":
       filePath = path.join(process.cwd(), 'leases', filename);
+      break;
+
+    case "complaint":
+      const files = await fs.readdir(path.join(process.cwd(), 'complaint-uploads'));
+
+      // Find the file that starts with the given filename
+      const matchingFile = files.find(file => path.parse(file).name === filename);
+
+      if (!matchingFile) {
+        return NextResponse.json({ error: 'File not found' }, { status: 404 });
+      }
+
+      filePath = path.join(process.cwd(), 'complaint-uploads', matchingFile);
+      filename = matchingFile;
       break;
 
     default:

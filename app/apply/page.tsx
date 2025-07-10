@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Poppins } from "next/font/google";
 import { postRequest } from "@/lib/fetch";
 import Image from "next/image";
@@ -47,10 +47,10 @@ const RentalApplicationForm = () => {
 
         const kivotosEmail = document.getElementById("kivotosEmail") as HTMLInputElement;
         const kivotosPassword = document.getElementById("kivotosPassword") as HTMLInputElement;
-        if (kivotosEmail && kivotosPassword && kivotosEmail.value != "" && kivotosPassword.value != "" && kivotosEmail.validity.valid) {
+        if ((kivotosEmail && kivotosPassword && kivotosEmail.value != "" && kivotosPassword.value != "" && kivotosEmail.validity.valid)) {
             kivotosAccountCreation.classList.toggle("hidden");
             document.getElementById("login-logo")?.classList.toggle("hidden");
-            document.getElementById("aspect")?.classList.toggle("hidden");
+            document.getElementById("aspect")?.remove()
             document.getElementById("application-form")?.style.setProperty("width", "100%");
 
             setShowMainForm(true);
@@ -80,7 +80,7 @@ const RentalApplicationForm = () => {
         let professional: Reference[] = [];
         let references = {
             personal: personal,
-            profeshional: professional
+            professional: professional
         }
 
         for (let i = 0; i < tenantCount.length + 2; i++) {
@@ -165,19 +165,37 @@ const RentalApplicationForm = () => {
             })
     }
 
+    const [ranOnce, setRanceOnce] = useState(false);
+    useEffect(() => {
+        if (ranOnce) return;
+        const isMdScreen = window.matchMedia('(min-width: 768px)').matches;
+        if (isMdScreen) {
+            const mobileInputs = document.getElementById("mobile-inputs") as HTMLInputElement;
+            if (mobileInputs) mobileInputs.remove();
+            setRanceOnce(true);
+            // Perform action for screens wider than or equal to 768px
+        } else {
+            const computerInputs = document.getElementById("computer-inputs") as HTMLInputElement;
+            if (computerInputs) computerInputs.remove();
+            setRanceOnce(true);
+            // Perform action for screens smaller than 768px
+        }
+    })
+
     return (
         <>
 
             {!showSuccess && (
                 <>
-                    <div className="bg-custom-gradient h-full w-full flex items-center">
+                    <div className={(showMainForm ? "bg-custom-gradient-1 md:bg-custom-gradient-1 h-full w-full flex items-center" : "bg-[#1c2932] md:bg-custom-gradient-1 h-full w-full flex items-center")}>
                         {/* shadow-[rgba(0,0,0,0.2)_3rem_3rem_30px_0px] */}
-                        <form id="application-form" action={submitApplication} className="relative h-auto w-2/3 mx-auto shadow-[rgba(0,0,0,0.2)_3rem_3rem_30px_0px]">
-                            <div id="aspect" className="aspect-w-16 aspect-h-9">
+                        <form id="application-form" action={submitApplication} className="relative h-full md:h-auto w-full md:w-2/3 md:mx-auto md:shadow-[rgba(0,0,0,0.2)_3rem_3rem_30px_0px]">
+                            <div id="aspect" className="hidden md:block aspect-w-16 aspect-h-9">
                                 <Image id="login-logo" objectFit="cover" layout="fill" className="w-full h-full" src="/login-logo.png" alt="Description" />
                             </div>
-                            <div id="kivotosAccountCreation" className="absolute inset-0 flex flex-row">
-                                <div className="flex flex-col w-[45%] p-8">
+                            <div id="kivotosAccountCreation" className="absolute inset-0 flex flex-row justify-center">
+                                {/* Mobile */}
+                                <div id="mobile-inputs" className="flex flex-col mt-8 md:mt-0 md:hidden">
                                     <h1 className={"flex flex-row text-white text-2xl " + p400.className}>Create an Account</h1>
                                     <p className={"flex flex-row w-4/5 text-white text-xs mt-4 " + p300.className} >Please enter an email and create a password to continue.</p>
 
@@ -188,7 +206,46 @@ const RentalApplicationForm = () => {
                                                     <Image height={24} width={24} src="/icons/Mail.png" alt="" />
                                                 </div>
                                                 <div className="flex flex-col justify-center">
-                                                    <label htmlFor="username" className={"text-white text-xs " + r400.className}>Email Address</label>
+                                                    <label htmlFor="kivotosEmail" className={"text-white text-xs " + r400.className}>Email Address</label>
+                                                    <input className={"w-full bg-[#101D26] text-white text-xs underline decoration-slate-500 " + r300.className} type="text" name="kivotosEmail" id="kivotosEmail" placeholder="Your email address..." />
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-row bg-white rounded-b-md items-center px-2 h-12">
+                                                <div className="flex flex-col w-1/5 p-2">
+                                                    <Image width={24} height={24} className="h-auto" src="/icons/Lock.png" alt="" />
+
+                                                </div>
+                                                <div className="flex flex-col justify-cente">
+                                                    <label htmlFor="kivotosPassword" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
+                                                    <input className={"w-full text-[#101D26] text-xs underline decoration-slate-500 " + r300.className} type="password" name="kivotosPassword" id="kivotosPassword" placeholder="Your password..." />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p id="error-msg" className="flex flex-row hidden text-red-500 mt-2"></p>
+                                    <div className={"flex flex-row w-full items-center text-white text-sm mt-4 " + r400.className} >
+                                        <div className="flex items-center">
+                                            <input readOnly checked className="accent-white" type="checkbox" name="remember" id="remember" />
+                                            <label htmlFor="remember" className="ml-2 text-xs">You&apos;re Remembered</label>
+                                        </div>
+                                    </div>
+                                    <div className={"flex flex-row gap-x-4 mt-6 text-white text-xs items-center  " + r400.className}>
+                                        <button id="registerButton" type="button" onClick={handleKivotosRegistration} className={"bg-[#73ACC9] text-[#101D26] text-xs w-24 h-8 rounded-sm " + r300.className}>Next</button>
+                                    </div>
+                                </div>
+                                {/* End Mobile */}
+                                <div id="computer-inputs" className="hidden md:flex flex-col w-[45%] p-8">
+                                    <h1 className={"flex flex-row text-white text-2xl " + p400.className}>Create an Account</h1>
+                                    <p className={"flex flex-row w-4/5 text-white text-xs mt-4 " + p300.className} >Please enter an email and create a password to continue.</p>
+
+                                    <div className="flex flex-row mt-6">
+                                        <div className="w-full">
+                                            <div className="flex flex-row bg-[#101D26] rounded-t-md items-center px-2 h-12">
+                                                <div className="flex flex-col w-1/5 p-2">
+                                                    <Image height={24} width={24} src="/icons/Mail.png" alt="" />
+                                                </div>
+                                                <div className="flex flex-col justify-center">
+                                                    <label htmlFor="kivotosEmail" className={"text-white text-xs " + r400.className}>Email Address</label>
                                                     <input className={"w-full bg-[#101D26] text-white text-xs underline decoration-slate-500 " + r300.className} required type="email" name="kivotosEmail" id="kivotosEmail" placeholder="Your email address..." />
                                                 </div>
                                             </div>
@@ -198,7 +255,7 @@ const RentalApplicationForm = () => {
 
                                                 </div>
                                                 <div className="flex flex-col justify-cente">
-                                                    <label htmlFor="password" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
+                                                    <label htmlFor="kivotosPassword" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
                                                     <input className={"w-full text-[#101D26] text-xs underline decoration-slate-500 " + r300.className} required type="password" name="kivotosPassword" id="kivotosPassword" placeholder="Your password..." />
                                                 </div>
                                             </div>
@@ -216,7 +273,7 @@ const RentalApplicationForm = () => {
                                         <button id="registerButton" type="button" onClick={handleKivotosRegistration} className={"bg-[#73ACC9] text-[#101D26] text-xs w-24 h-8 rounded-sm " + r300.className}>Next</button>
                                     </div>
                                 </div>
-                                <div className="flex flex-col w-[55%]"></div>
+                                <div className="hidden md:flex flex-col w-[55%]"></div>
                             </div>
                             {showMainForm && <MainApplicationForm tenantCount={tenantCount} setTenantCount={setTenantCount} maxTenants={maxTenants} occupantCount={occupantCount} setOccupantCount={setOccupantCount} maxOccupants={maxOccupants} />}
                         </form>
@@ -225,7 +282,9 @@ const RentalApplicationForm = () => {
             )}
 
             {showSuccess && (
-                <h1>{successMessage}</h1>
+                <div className="bg-custom-gradient-1 h-full w-full">
+                    <h1>{successMessage}</h1>
+                </div>
             )}
         </>
     );
@@ -274,21 +333,21 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
     }
 
     return (
-        <div className="overflow-y-auto h-[85vh] p-16">
-            <div className="text-white">
-                <h1 className={"text-4xl font-bold mb-2 " + r600.className}>Rental Application Form</h1>
+        <div className="overflow-y-auto min-h-screen md:h-[85vh] w-screen md:w-auto px-0 md:p-16">
+            <div className="text-white p-4">
+                <h1 className={"text-2xl md:text-4xl font-bold mb-2 " + r600.className}>Rental Application Form</h1>
                 <p className={"text-lg mb-4 " + p300.className}>Incomplete Applications will not be processed.</p>
             </div>
 
-            <fieldset id="fieldset-1" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16">
+            <fieldset id="fieldset-1" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16">
                 <div className="flex flex-col">
                     <div className="flex border-b-[1px] border-[#6C6B62] mb-2 flex-row text-white">
                         <div>
-                            <h1 className={"text-4xl font-bold mb-2 " + r600.className}>General Information</h1>
+                            <h1 className={"text-3xl md:text-4xl font-bold mb-2 " + r600.className}>General Information</h1>
                             <p className={"text-lg mb-4 " + p300.className}><span className="text-red-500">*</span> All of the fields are required</p>
                         </div>
                     </div>
-                    <div className={"grid grid-cols-4 gap-x-6 text-white text-sm " + r400.className}>
+                    <div className={"grid grid-cols-2 gap-y-2 md:grid-cols-4 gap-x-6 text-white text-sm " + r400.className}>
                         <div>
                             <label htmlFor="name" className="mb-2">Name:</label>
                             <input type="text" id="name" name="name" className="bg-[#868374] p-2 w-full" />
@@ -369,7 +428,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <input type="text" id="presentRental" name="presentRental" className="bg-[#868374] p-2 w-full" />
                         </div>
                     </div>
-                    <div className={"grid grid-cols-4 border-t-[1px] border-[#6C6B62] mt-8 gap-x-6 pt-2 text-white text-sm " + r400.className}>
+                    <div className={"grid grid-cols-2 md:grid-cols-4 gap-y-2 border-t-[1px] border-[#6C6B62] mt-8 gap-x-6 pt-2 text-white text-sm " + r400.className}>
                         <div>
                             <label htmlFor="occupants" className="mb-2">Number of Persons to Occupy Unit:</label>
                             <input type="number" id="occupants" name="occupants" className="bg-[#868374] p-2 w-full" />
@@ -390,7 +449,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                 </div>
             </fieldset >
 
-            <fieldset id="fieldset-2" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16">
+            <fieldset id="fieldset-2" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16">
                 <div className="flex flex-col gap-y-2 text-white">
                     <div className="flex border-b-[1px] border-[#6C6B62] mb-2 flex-row">
                         <div>
@@ -398,12 +457,12 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <p className={"text-lg mb-4 " + p300.className}>Only persons listed on this application will be permitted to occupy the premises.</p>
                         </div>
                     </div>
-                    <div className={"flex flex-row gap-x-4 text-white text-sm " + r400.className}>
-                        <div className="flex flex-col w-1/5">
+                    <div className={"flex flex-row gap-x-4 text-white text-sm  " + r400.className}>
+                        <div className="flex flex-col w-1/2 md:w-1/5">
                             <label htmlFor="brokenLease" className="mb-2 pr-2 flex items-center">Have you ever broken a lease?</label>
                             <input type="text" id="brokenLease" name="brokenLease" className="p-2 bg-[#868374]" />
                         </div>
-                        <div className="flex flex-col w-4/5 relative">
+                        <div className="flex flex-col w-1/2 md:w-4/5 relative">
                             <label htmlFor="brokenLeaseReason" className="mb-2 px-2 flex items-center">If so, what was the reason?</label>
                             <input type="text" id="brokenLeaseReason" name="brokenLeaseReason" className="p-2 bg-[#868374] absolute bottom-0 left-0 right-0" />
                         </div>
@@ -413,7 +472,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <label htmlFor="refusedToPayRent" className="flex items-center">Have you ever refused to pay rent for any reason?</label>
                             <input type="text" id="refusedToPayRent" name="refusedToPayRent" className="bg-[#868374] w-full p-2" />
                         </div>
-                        <div>
+                        <div className="flex flex-col justify-between h-full">
                             <label htmlFor="filedForBankruptcy" className="flex items-center">Have you ever filed for bankruptcy?</label>
                             <input type="text" id="filedForBankruptcy" name="filedForBankruptcy" className="bg-[#868374] w-full p-2" />
                         </div>
@@ -431,7 +490,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                         </div>
                     </div>
                     <h1 className={"text-2xl mt-4 " + r600.className}>Occupants</h1>
-                    <div className="grid grid-cols-4 gap-x-2">
+                    <div className={"grid grid-cols-1 md:grid-cols-4 gap-x-2 text-sm " + p400.className}>
                         <div className="grid grid-rows gap-y-1">
                             <h2 className={"flex items-center h-12 text-sm " + r300.className}>First name, initial, Last name (Tenants to occupy the unit)</h2>
                             <input type="text" id="tenant1Name" name="tenant1Name" className="bg-[#868374] h-10 p-2" />
@@ -465,7 +524,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                         <button className={"rounded-md text-sm flex flex-row gap-x-2 " + r400.className} onClick={handleAddOccupant}><Image height={20} width={20} src="/icons/Add.png" alt="" /> Add Occupant</button>
                     </div>
                     <h1 className={"text-2xl mt-4 " + r600.className}>Tenants</h1>
-                    <div className="grid grid-cols-2 gap-x-2">
+                    <div className={"grid grid-cols-1 md:grid-cols-2 gap-x-2 text-sm " + p400.className}>
                         <div className={"grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-4 " + r400.className}>
                             <h2 className="mb-2 grid col-span-2">Tenant 1</h2>
                             <div className="grid gap-y-1 items-center">
@@ -560,9 +619,9 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     </div>
                 </div>
             </fieldset >
-            <fieldset id="fieldset-3" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16">
-                <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] grid grid-cols-2 text-sm " + r400.className}>
-                    <div className="grid col-span-2 border-b-[1px] border-[#6C6B62] mb-2">
+            <fieldset id="fieldset-3" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16">
+                <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] grid grid-cols-1 md:grid-cols-2 text-sm " + r400.className}>
+                    <div className="grid col-span-1 md:col-span-2 border-b-[1px] border-[#6C6B62] mb-2">
                         <div>
                             <h1 className={"text-4xl font-bold mb-2 " + r600.className}>Vehicles</h1>
                             <p className={"text-lg mb-4 " + p300.className}>Please correctly enter make, model, colour, and year for all vehicles.</p>
@@ -584,8 +643,9 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     </div>
                 </div>
             </fieldset>
-            <fieldset id="fieldset-4" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16">
-                <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] text-sm " + r400.className}>
+            <fieldset id="fieldset-4" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16">
+                <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] text-sm "}>
+                    {/* <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] text-sm " + r400.className}> */}
                     <div className="border-b-[1px] border-[#6C6B62]">
                         <div>
                             <h1 className={"text-4xl font-bold mb-2 " + r600.className}>References</h1>
@@ -596,8 +656,9 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     <div className={"border-b-[1px] border-[#6C6B62] mb-2 text-md py-4 " + r400.className}>
                         * Personal
                     </div>
-                    <div className="relative grid grid-cols-4 gap-x-4">
-                        <div className={"absolute text-[#868274] text-xl left-[-3rem] top-10 " + r600.className}>#1</div>
+                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-x-4">
+                        <div className={"absolute text-[#868274] text-xl left-[-3rem] top-10 "}>#1</div>
+                        {/* <div className={"absolute text-[#868274] text-xl left-[-3rem] top-10 " + r600.className}>#1</div> */}
                         <div className="grid grid-rows-2 items-center">
                             <label htmlFor="personalRef1Name" className="">Full Name:</label>
                             <input type="text" id="personalRef1Name" name="personalRef1Name" className="bg-[#868374] p-2" />
@@ -619,7 +680,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <input type="text" id="personalRef1HowLong" name="personalRef1HowLong" className="bg-[#868374] p-2" />
                         </div>
                     </div>
-                    <div className="relative grid grid-cols-4 gap-x-4">
+                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-x-4">
                         <div className={"absolute text-[#868274] text-xl left-[-3rem] top-10 " + r600.className}>#2</div>
                         <div className="grid grid-rows-2 items-center">
                             <label htmlFor="personalRef2Name" className="">Full Name:</label>
@@ -646,7 +707,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     <div className={"border-y-[1px] border-[#6C6B62] mb-2 mt-4 text-md py-4 " + r400.className}>
                         * Professional (e.g. attorney, doctor)
                     </div>
-                    <div className="relative grid grid-cols-4 gap-x-4">
+                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-x-4">
                         <div className={"absolute text-[#868274] text-xl left-[-3rem] top-10 " + r600.className}>#1</div>
                         <div className="grid grid-rows-2 items-center">
                             <label htmlFor="professionalRef1Name" className="">Full Name:</label>
@@ -669,7 +730,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <input type="text" id="professionalRef1HowLong" name="professionalRef1HowLong" className="bg-[#868374] p-2" />
                         </div>
                     </div>
-                    <div className="relative grid grid-cols-4 gap-x-4">
+                    <div className="relative grid grid-cols-2 md:grid-cols-4 gap-x-4">
                         <div className={"absolute text-[#868274] text-xl left-[-3rem] top-10 " + r600.className}>#2</div>
                         <div className="grid grid-rows-2 items-center">
                             <label htmlFor="professionalRef2Name" className="">Full Name:</label>
@@ -696,16 +757,16 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                 {/* Add second personal ref into db and backend
                 Fix class name for professional refs frontend and backend*/}
             </fieldset >
-            <fieldset id="fieldset-5" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16">
+            <fieldset id="fieldset-5" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16">
                 <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] text-sm " + r400.className}>
                     <div className="border-b-[1px] border-[#6C6B62]">
                         <div>
-                            <h1 className={"text-3xl font-bold mb-2 " + r600.className}>Current Landlord/Owner/Superintendent/Company</h1>
+                            <h1 className={"text-xl md:text-3xl font-bold mb-2 " + r600.className}>Current Landlord/Owner/<span className="md:hidden block"> </span>Superintendent/Company</h1>
                             <p className={"text-lg mb-4 " + p300.className}>Please input accuate information.</p>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-4 gap-x-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-x-4">
                         <div className="grid grid-rows-2 items-center">
                             <label htmlFor="landlordName" className="">Full Name:</label>
                             <input type="text" id="landlordName" name="landlordName" className="bg-[#868374] p-2" />
@@ -722,7 +783,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <label htmlFor="numberChequesNsf">No. of Cheques Returned NSF</label>
                             <input type="text" id="numberChequesNsf" name="numberChequesNsf" className="bg-[#868374] p-2" />
                         </div>
-                        <div className="grid col-span-3 grid-rows-2 items-center">
+                        <div className="grid md:col-span-3 grid-rows-2 items-center">
                             <label htmlFor="movingReason">Reason for Leaving:</label>
                             <input type="text" id="movingReason" name="movingReason" className="bg-[#868374] p-2" />
                         </div>
@@ -733,7 +794,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     </div>
                 </div>
             </fieldset>
-            <fieldset id="fieldset-6" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16">
+            <fieldset id="fieldset-6" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16">
                 <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] text-sm " + r400.className}>
                     <div className="border-b-[1px] border-[#6C6B62]">
                         <div>
@@ -741,7 +802,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                             <p className={"text-lg mb-4 " + p300.className}>Please input the correct contact information.</p>
                         </div>
                     </div>
-                    <div className="grid grid-cols-4 gap-x-4">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-x-4">
                         <div className="grid grid-rows-2 items-center">
                             <label htmlFor="emergencyContactName" className="">Full Name:</label>
                             <input type="text" id="emergencyContactName" name="emergencyContactName" className="bg-[#868374] p-2" />
@@ -757,7 +818,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     </div>
                 </div>
             </fieldset>
-            <fieldset id="fieldset-7" className="flex flex-row mb-4 bg-[#A09D8F] py-10 px-16 text-white">
+            <fieldset id="fieldset-7" className="rounded-md flex flex-row mb-4 bg-[#A09D8F] py-10 px-8 md:px-16 text-white">
                 <div className={"gap-y-2 gap-x-4 text-white bg-[#A09D8F] text-sm " + r400.className}>
                     <div className="border-b-[1px] border-[#6C6B62]">
                         <div>
@@ -766,19 +827,18 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                     </div>
                     <div>
                         <h1 className={"text-3xl " + r400.className}></h1>
-                        <div className="grid grid-rows-2 mt-4 gap-y-2">
+                        <div className="grid md:grid-rows-2 mt-4 gap-y-2">
                             <p className={"w-3/4 " + p400.className}>Do you give management permission to contact the personal or professional references listed above, both now and in the
                                 future for rental consideration or for collection purposes should they be deemed necessary?</p>
 
                             <div>
                                 <input type="text" placeholder="Yes or No" id="permissionContactReferences" name="permissionContactReferences" className={"bg-[#868374] placeholder-white p-2 text-sm mt-2 " + p300.className} />
-
                             </div>
                             <div className="flex">
                                 <p className="text-left w-3/4">Thank you for completing an application to rent from us. Please sign below. Also note that a completed application requires
                                     submission of the following documents which will be copied and attached to this application.</p>
                             </div>
-                            <div className="grid grid-rows-3">
+                            <div className="grid grid-rows-3 gap-y-2">
                                 <div className="flex items-start items-center gap-x-2">
                                     <label htmlFor="driversLicenseOrSin">Driver’s License or Social Insurance Number:</label>
                                     <input type="checkbox" onChange={handleIsUploadingID} name="driversLicenseOrSin" />
@@ -813,11 +873,7 @@ const MainApplicationForm: React.FC<MainApplicationFormProps> = ({ tenantCount, 
                 </div>
             </fieldset >
 
-            {/* Done on Office side
-                        <label htmlFor="leasingAgentSignature" className="mb-2">Leasing Agent Signature:</label>
-                        <input type="text" id="applicantSignature" name="applicantSignature" className="border-2 p-2" /> */}
-
-            <button type="submit" className="w-32 bg-[#A09D8F] text-white py-2">Submit</button>
+            <button type="submit" className="w-32 bg-[#A09D8F] text-white py-2 rounded-md">Submit</button>
         </div >
     )
 };

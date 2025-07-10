@@ -16,14 +16,56 @@ const LoginPage = () => {
   }
 
   return (
-    <div id="landing-bg">
-      {/* shadow-[rgba(0,0,0,0.2)_3rem_3rem_30px_0px] */}
-      <form action={validateLogin} className="relative h-auto w-[55%] mx-auto shadow-[rgba(0,0,0,0.2)_3rem_3rem_30px_0px]">
-        <div className="aspect-w-16 aspect-h-9">
-          <Image layout="fill" src="/login-logo.png" alt="Description" className="object-cover w-full h-full" />
+    <div className="bg-[#1c2932] md:bg-custom-gradient h-full flex md:items-center">
+      <form action={validateLogin} className="relative h-1/2 md:h-auto w-3/4 md:w-[55%] mx-auto md:shadow-[rgba(0,0,0,0.2)_3rem_3rem_30px_0px]">
+        <div id="aspect" className="hidden md:block aspect-w-16 aspect-h-9">
+          <Image id="login-logo" objectFit="cover" layout="fill" className="w-full h-full" src="/login-logo.png" alt="Description" />
         </div>
-        <div className="absolute inset-0 flex flex-row">
-          <div className="flex flex-col w-[45%] p-8">
+        <div id="kivotosAccountCreation" className="absolute inset-0 flex flex-row">
+          {/* Mobile */}
+          <div className="flex flex-col justify-center md:hidden">
+            <h1 className={"flex flex-row text-white text-2xl " + p400.className}>Welcome Back!</h1>
+            <p className={"flex flex-row text-white text-sm md:text-xs mt-4 " + p300.className} >We&apos;re happy to have you here. Please log in to continue.</p>
+
+            <div className="flex flex-row mt-6">
+              <div className="w-full">
+                <div className="flex flex-row bg-[#101D26] rounded-t-md items-center px-2 h-12">
+                  <div className="flex flex-col w-1/5 p-2">
+                    <Image height={24} width={24} src="/icons/Mail.png" alt="" />
+                  </div>
+                  <div className="flex flex-col justify-center">
+                    <label htmlFor="usernameM" className={"text-white text-xs " + r400.className}>Email Address</label>
+                    <input className={"w-full bg-[#101D26] text-white text-xs underline decoration-slate-500 " + r300.className} type="text" name="usernameM" placeholder="Your email address..." />
+                  </div>
+                </div>
+                <div className="flex flex-row bg-white rounded-b-md items-center px-2 h-12">
+                  <div className="flex flex-col w-1/5 p-2">
+                    <Image width={24} height={24} className="h-auto" src="/icons/Lock.png" alt="" />
+
+                  </div>
+                  <div className="flex flex-col justify-cente">
+                    <label htmlFor="passwordM" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
+                    <input className={"w-full text-[#101D26] text-xs underline decoration-slate-500 " + r300.className} type="password" name="passwordM" placeholder="Your password..." />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p id="error-msg" className="flex flex-row hidden text-red-500 mt-2"></p>
+            <div className={"flex flex-row w-full items-center text-white text-sm mt-4 " + r400.className} >
+              <div className="flex items-center">
+                <input readOnly checked className="accent-white" type="checkbox" name="remember" id="remember" />
+                <label htmlFor="remember" className="ml-2 text-xs">You&apos;re Remembered</label>
+              </div>
+            </div>
+            <div className={"flex flex-row gap-x-4 mt-6 text-white text-xs items-center  " + r400.className}>
+              <button className={"bg-[#73ACC9] text-[#101D26] text-xs w-32 h-8 rounded-sm " + r300.className} type="submit">Login</button>
+              or
+              <a href="/apply" className={"flex bg-[#101D26] text-white text-xs w-32 h-8 rounded-sm text-center items-center justify-center " + r300.className}>Apply</a>
+            </div>
+          </div>
+          {/* End mobile */}
+
+          <div className="hidden md:flex flex-col w-[45%] p-8">
             <h1 className={"flex flex-row text-white text-2xl " + p400.className}>Welcome Back!</h1>
             <p className={"flex flex-row text-white text-xs mt-4 " + p300.className} >We&apos;re happy to have you here. Please log in to continue.</p>
 
@@ -31,25 +73,27 @@ const LoginPage = () => {
               <div className="w-full">
                 <div className="flex flex-row bg-[#101D26] rounded-t-md items-center px-2 h-12">
                   <div className="flex flex-col w-1/5 p-2">
-                    <Image layout="fill" className="w-[1.5rem] h-auto" src="/icons/Mail.png" alt="" />
+                    <Image height={24} width={24} src="/icons/Mail.png" alt="" />
                   </div>
-                  <div className="flex flex-col justify-center w-4/5">
+                  <div className="flex flex-col justify-center">
                     <label htmlFor="username" className={"text-white text-xs " + r400.className}>Email Address</label>
                     <input className={"w-full bg-[#101D26] text-white text-xs underline decoration-slate-500 " + r300.className} type="text" name="username" placeholder="Your email address..." />
                   </div>
                 </div>
                 <div className="flex flex-row bg-white rounded-b-md items-center px-2 h-12">
                   <div className="flex flex-col w-1/5 p-2">
-                    <Image layout="fill" className="w-[1.5rem] h-auto" src="/icons/Lock.png" alt="" />
+                    <Image width={24} height={24} className="h-auto" src="/icons/Lock.png" alt="" />
+
                   </div>
-                  <div className="flex flex-col justify-center w-4/5">
+                  <div className="flex flex-col justify-cente">
                     <label htmlFor="password" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
                     <input className={"w-full text-[#101D26] text-xs underline decoration-slate-500 " + r300.className} type="password" name="password" placeholder="Your password..." />
                   </div>
                 </div>
               </div>
             </div>
-            <div className={"flex flex-row items-center text-white text-sm mt-4 " + r400.className} >
+            <p id="error-msg" className="flex flex-row hidden text-red-500 mt-2"></p>
+            <div className={"flex flex-row w-full items-center text-white text-sm mt-4 " + r400.className} >
               <div className="flex items-center">
                 <input readOnly checked className="accent-white" type="checkbox" name="remember" id="remember" />
                 <label htmlFor="remember" className="ml-2 text-xs">You&apos;re Remembered</label>
@@ -62,32 +106,36 @@ const LoginPage = () => {
               <a href="/apply" className={"flex bg-[#101D26] text-white text-xs w-24 h-8 rounded-sm text-center items-center justify-center " + r300.className}>Apply</a>
             </div>
           </div>
-          <div className="flex flex-col w-[55%]"></div>
+          <div className="hidden md:flex flex-col w-[55%]"></div>
         </div>
-      </form>
-
-      {/* <Login />
-      <button onClick={redirectApply}>Otherwise, Submit Rental Application</button>
-      */}
+      </form >
     </div >
   );
 }
 
 export default LoginPage;
 
-const validateLogin = (FormData: FormData) => {
-  const data = {
-    username: FormData.get("username"),
-    password: FormData.get("password"),
+const validateLogin = (formData: FormData) => {
+  let data = {
+    username: formData.get("username"),
+    password: formData.get("password"),
     validateCookie: false
   }
+
   if (!data.username || !data.password) {
+    data = {
+      username: formData.get("usernameM"),
+      password: formData.get("passwordM"),
+      validateCookie: false
+    }
+  }
+
+  if (!formData.get("usernameM") && !formData.get("passwordM") && !formData.get("username") && !formData.get("password")) {
     alert("Please fill in all fields");
     // document.getElementById("errorMSG")?.classList.remove("hidden");
     // setTimeout(() => {
     //   document.getElementById("errorMSG")?.classList.add("hidden");
     // }, 2000);
-    return 0;
   }
 
   postRequest("/api/auth", data)
@@ -106,27 +154,3 @@ const validateLogin = (FormData: FormData) => {
       }
     })
 }
-
-{/*
-
-            <div className="flex flex-row">
-              <div className="w-full">
-                <div className="flex flex-row bg-[#101D26] rounded-t-md">
-                  <div className="flex flex-col w-1/5 p-2">
-                    <img className="w-6 h-auto" src="/icons/Mail.png" alt="" />
-                  </div>
-                  <div className="flex flex-col justify-center w-4/5">
-                    <label htmlFor="username" className={"text-white text-xs " + r400.className}>Email Address</label>
-                    <input className={"w-full bg-[#101D26] text-white text-xs underline decoration-slate-500 " + r300.className} type="text" name="username" placeholder="Your email address..." />
-                  </div>
-                </div>
-                <div className="flex flex-row bg-white rounded-b-md">
-                  <div className="flex flex-col w-1/5 p-2">
-                    <img className="w-6 h-auto" src="/icons/Lock.png" alt="" />
-                  </div>
-                  <div className="flex flex-col justify-center w-4/5">
-                    <label htmlFor="password" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
-                    <input className={"w-full text-[#101D26] text-xs underline decoration-slate-500 " + r300.className} type="password" name="password" placeholder="Your password..." />
-                  </div>
-                </div>
-              </div>*/}

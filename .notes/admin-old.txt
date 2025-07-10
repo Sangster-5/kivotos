@@ -257,3 +257,351 @@
                         </div>
                     </div>
                 </>
+
+OLD TASK:
+               // <>
+                //     <div className="flex flex-row">
+                //         <div className="flex flex-col w-1/3">
+                //             <h1 className="flex flex-row font-bold">Todo</h1>
+                //             <div className="row" id='todo-tasks'></div>
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             <h1 className="flex flex-row font-bold">In-Progress</h1>
+                //             <div className="row" id='in-progress-tasks'></div>
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             <h1 className="flex flex-row font-bold">Complete</h1>
+                //             <div className="row" id='complete-tasks'></div>
+                //         </div>
+                //     </div>
+                //     <div className="flex flex-row">
+                //         <div>
+                //             {tasks.map((task, index) => {
+                //                 return (
+                //                     <div className='flex flex-row'>
+                //                         <h1>{task.title}</h1>
+                //                         <h1>{task.category}</h1>
+                //                         <h1>{task.status}</h1>
+                //                     </div>
+                //                 )
+                //             })}
+                //         </div>
+                //         <>{/* <div className="flex flex-col w-1/3">
+                //             {tasks.map((task, index) => {
+                //                 if (task.status != "todo") return;
+                //                 if (categoryFilter != "all" && task.category != categoryFilter) return;
+                //                 return (
+                //                     <div key={index} id={task.id.toString()} className='flex flex-row'>
+                //                         <div className="flex flex-col">
+                //                             <h1 className='flex flex-row'>{task.title}</h1>
+                //                             <p className='flex flex-row'>{task.description}</p>
+                //                             <p className='flex flex-row'>{task.assigned_employees}</p>
+                //                             <p className='flex flex-row'>{task.category}</p>
+                //                             <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                //                             <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
+                //                                 <option value="todo">Todo</option>
+                //                                 <option value="in-progress">In Progress</option>
+                //                                 <option value="completed">Completed</option>
+                //                             </select>
+                //                         </div>
+                //                     </div>)
+                //             })}
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             {tasks.map((task, index) => {
+                //                 if (task.status != "in-progress") return;
+                //                 if (categoryFilter != "all" && task.category != categoryFilter) return;
+                //                 return (
+                //                     <div key={index} id={task.id.toString()} className='flex flex-row'>
+                //                         <div className="flex flex-col">
+                //                             <h1 className='flex flex-row'>{task.title}</h1>
+                //                             <p className='flex flex-row'>{task.description}</p>
+                //                             <p className='flex flex-row'>{task.assigned_employees}</p>
+                //                             <p className='flex flex-row'>{task.category}</p>
+                //                             <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                //                             <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md'>
+                //                                 <option value="in-progress">In Progress</option>
+                //                                 <option value="completed">Completed</option>
+                //                                 <option value="todo">Todo</option>
+                //                             </select>
+                //                         </div>
+                //                     </div>
+                //                 )
+                //             })}
+                //         </div>
+                //         <div className="flex flex-col w-1/3">
+                //             {tasks.map((task, index) => {
+                //                 if (task.status != "completed") return;
+                //                 if (categoryFilter != "all" && task.category != categoryFilter) return;
+                //                 return (
+                //                     <div key={index} id={task.id.toString()} className='flex flex-row'>
+                //                         <div className="flex flex-col">
+                //                             <h1 className='flex flex-row'>{task.title}</h1>
+                //                             <p className='flex flex-row'>{task.description}</p>
+                //                             <p className='flex flex-row'>{task.assigned_employees}</p>
+                //                             <p className='flex flex-row'>{task.category}</p>
+                //                             <p className='flex flex-row'>{new Date(task.created_timestamp).toLocaleDateString()}</p>
+                //                             <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md'>
+                //                                 <option value="completed">Completed</option>
+                //                                 <option value="todo">Todo</option>
+                //                                 <option value="in-progress">In Progress</option>
+                //                             </select>
+                //                         </div>
+                //                     </div>
+                //                 )
+                //             })}
+                //         </div> */}
+                //         </>
+                //     </div>
+                // </>
+
+OLD Requests
+<div className="flex flex-col w-1/3">
+                <h1 className="flex flex-row font-bold mb-4">Todo</h1>
+                {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
+                    if (request.status == "todo") {
+                        return (
+                            <div className="flex flex-row gap-x-2" key={index}>
+                                <div id={request.id.toString()} className="flex flex-col">
+                                    <h1 id='tenant-name'>{request.tenant_name}</h1>
+                                    <h1 id='unit'>{request.unit}</h1>
+                                    <p id='description'>{request.description}</p>
+                                    <p id='property'>{request.property}</p>
+                                    <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
+                                    {!request.is_task && <button className='border-2 px-4 py-2 bg-white' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                    <select onChange={handleSelectChange} name="statusSelector" defaultValue="todo" className='rounded-md flex flex-row'>
+                                        <option value="todo">Todo</option>
+                                        <option value="in-progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )
+                    }
+                })}
+            </div>
+            <div className="flex flex-col w-1/3">
+                <h1 className="flex flex-row font-bold mb-4">In Progress</h1>
+                {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
+                    if (request.status == "in-progress") {
+                        return (
+                            <div className="flex flex-row gap-x-2" key={index}>
+                                <div id={request.id.toString()} className="flex flex-col">
+                                    <h1 id='tenant-name'>{request.tenant_name}</h1>
+                                    <h1 id='unit'>{request.unit}</h1>
+                                    <p id='description'>{request.description}</p>
+                                    <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
+                                    {!request.is_task && <button className='border-2 px-4 py-2 bg-white' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                    <select onChange={handleSelectChange} name="statusSelector" defaultValue="in-progress" className='rounded-md flex flex-row'>
+                                        <option value="todo">Todo</option>
+                                        <option value="in-progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )
+                    }
+                })}
+            </div>
+            <div className="flex flex-col w-1/3">
+                <h1 className="flex flex-row font-bold mb-4">Completed</h1>
+                {maintenanceRequests.length > 0 && maintenanceRequests.map((request: MaintenanceRequest, index) => {
+                    if (request.status == "completed") {
+                        return (
+                            <div className="flex flex-row gap-x-2" key={index}>
+                                <div id={request.id.toString()} className="flex flex-col">
+                                    <h1 id='tenant-name'>{request.tenant_name}</h1>
+                                    <h1 id='unit'>{request.unit}</h1>
+                                    <p id='description'>{request.description}</p>
+                                    <h1 id='date'>{new Date(request.date_time).toLocaleString()}</h1>
+                                    {!request.is_task && <button className='border-2 px-4 py-2 bg-white' id={request.id.toString()} onClick={handleMaintenanceRequestToTask}>Create Task</button>}
+                                    <select onChange={handleSelectChange} name="statusSelector" defaultValue="completed" className='rounded-md flex flex-row'>
+                                        <option value="todo">Todo</option>
+                                        <option value="in-progress">In Progress</option>
+                                        <option value="completed">Completed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        )
+                    }
+                })}
+            </div>
+
+Complaints
+<div className="flex flex-row gap-x-2">
+                <div className="flex flex-col w-1/3">
+                    <h1 className="flex flex-row font-bold mb-4">Pending</h1>
+                    {complaints.length > 0 && complaints.map((complaint: Complaint, index) => {
+                        if (complaint.status == "pending" && (typeFilter == "all" ? true : complaint.type == typeFilter)) {
+                            return (
+                                <div className="flex flex-row gap-x-2" key={index}>
+                                    <div className="flex flex-col">
+                                        <h1>{complaint.details}</h1>
+                                        <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
+                                        {typeFilter == "all" && <h1>{complaint.type.charAt(0).toUpperCase() + complaint.type.slice(1)}</h1>}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })}
+                </div>
+                <div className="flex flex-col w-1/3">
+                    <h1 className="flex flex-row font-bold mb-4">Reviewed</h1>
+                    {complaints.length > 0 && complaints.map((complaint: Complaint, index) => {
+                        if (complaint.status == "reviewed" && (typeFilter == "all" ? true : complaint.type == typeFilter)) {
+                            return (
+                                <div className="flex flex-row gap-x-2" key={index}>
+                                    <div className="flex flex-col">
+                                        <h1>{complaint.details}</h1>
+                                        <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
+                                        {typeFilter == "all" && <h1>{complaint.type}</h1>}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })}
+                </div>
+                <div className="flex flex-col w-1/3">
+                    <h1 className="flex flex-row font-bold mb-4">Completed</h1>
+                    {complaints.length > 0 && complaints.map((complaint: Complaint, index) => {
+                        if (complaint.status == "resolved" && (typeFilter == "all" ? true : complaint.type == typeFilter)) {
+                            return (
+                                <div className="flex flex-row gap-x-2" key={index}>
+                                    <div className="flex flex-col">
+                                        <h1>{complaint.details}</h1>
+                                        <h1>{new Date(complaint.timestamp).toLocaleString()}</h1>
+                                        {typeFilter == "all" && <h1>{complaint.type}</h1>}
+                                    </div>
+                                </div>
+                            )
+                        }
+                    })}
+                </div>
+            </div>
+
+Leases
+</div>
+            <div className="flex flex-row items-center gap-x-2">
+                <div className="flex gap-y-1 flex-col w-1/3">
+                    {leases.length > 0 && leases.map((lease: Lease, index) => {
+                        const diffTime = new Date().getTime() - new Date(lease.effective_date).getTime();
+                        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+                        if (diffMonths <= 1 && diffMonths > 0) {
+                            return (
+
+                                <div key={index} className="flex flex-row">
+                                    <div id={lease.id.toString()} className="flex gap-y-1 flex-col">
+                                        <h1>Unit: {lease.unit}</h1>
+                                        <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                        <h1>${lease.rental_amount}</h1>
+                                        <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
+                                        <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                                        <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                                        {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
+                                    </div>
+                                </div>
+                            )
+                        } else {
+                            return;
+                        }
+                    })}
+                </div>
+                <div className="flex gap-y-1 flex-col w-1/3">
+                    {leases.length > 0 && leases.map((lease: Lease, index) => {
+                        const diffTime = new Date(lease.effective_date).getTime() - new Date().getTime();
+                        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+                        if (diffMonths < 3 && diffMonths > 1) {
+                            return (
+
+                                <div key={index} className="flex flex-row">
+                                    <div id={lease.id.toString()} className="flex gap-y-1 flex-col">
+                                        <h1>Unit: {lease.unit}</h1>
+                                        <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                        <h1>${lease.rental_amount}</h1>
+                                        <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
+                                        <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                                        <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                                        {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
+                                    </div>
+                                </div>
+                            )
+                        } else {
+                            return;
+                        }
+                    })}
+                </div>
+                <div className="flex flex-col w-1/3">
+                    {leases.length > 0 && leases.map((lease: Lease, index) => {
+                        const diffTime = new Date(lease.effective_date).getTime() - new Date().getTime();
+                        const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
+
+                        if (diffMonths < 6 && diffMonths > 3) {
+                            return (
+
+                                <div key={index} className="flex flex-row">
+                                    <div id={lease.id.toString()} className="flex gap-y-1 flex-col">
+                                        <h1>Unit: {lease.unit}</h1>
+                                        <h1>{lease.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard"}</h1>
+                                        <h1>${lease.rental_amount}</h1>
+                                        <h1>Effective: {new Date(lease.effective_date).toLocaleDateString()}</h1>
+                                        <h1>Termination: {new Date(lease.termination_date).toLocaleDateString()}</h1>
+                                        <a download={lease.id} href={`/api/files?type=lease&filename=${lease.id}.xlsx`} className="flex flex-col underline">Download Lease</a>
+                                        {!lease.signed && <button onClick={handleLeaseConfirmation} className='px-4 py-1 border-2 bg-white'>Confirm Lease</button>}
+                                    </div>
+                                </div>
+                            )
+                        } else {
+                            return;
+                        }
+                    })}
+                </div>
+            </div> 
+
+OLD LOGIN
+        {/* <div className="aspect-w-16 aspect-h-9">
+          <Image layout="fill" src="/login-logo.png" alt="Description" className="object-cover w-full h-full" />
+        </div>
+        <div className="absolute inset-0 flex flex-row">
+          <div className="flex flex-col w-[45%] p-8">
+            <h1 className={"flex flex-row text-white text-2xl " + p400.className}>Welcome Back!</h1>
+            <p className={"flex flex-row text-white text-xs mt-4 " + p300.className} >We&apos;re happy to have you here. Please log in to continue.</p>
+
+            <div className="flex flex-row mt-6">
+              <div className="w-full">
+                <div className="flex flex-row bg-[#101D26] rounded-t-md items-center px-2 h-12">
+                  <div className="flex flex-col w-1/5 p-2">
+                    <Image layout="fill" className="w-[1.5rem] h-auto" src="/icons/Mail.png" alt="" />
+                  </div>
+                  <div className="flex flex-col justify-center w-4/5">
+                    <label htmlFor="username" className={"text-white text-xs " + r400.className}>Email Address</label>
+                    <input className={"w-full bg-[#101D26] text-white text-xs underline decoration-slate-500 " + r300.className} type="text" name="username" placeholder="Your email address..." />
+                  </div>
+                </div>
+                <div className="flex flex-row bg-white rounded-b-md items-center px-2 h-12">
+                  <div className="flex flex-col w-1/5 p-2">
+                    <Image layout="fill" className="w-[1.5rem] h-auto" src="/icons/Lock.png" alt="" />
+                  </div>
+                  <div className="flex flex-col justify-center w-4/5">
+                    <label htmlFor="password" className={"text-[#101D26] text-xs " + r400.className}>Password</label>
+                    <input className={"w-full text-[#101D26] text-xs underline decoration-slate-500 " + r300.className} type="password" name="password" placeholder="Your password..." />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className={"flex flex-row items-center text-white text-sm mt-4 " + r400.className} >
+              <div className="flex items-center">
+                <input readOnly checked className="accent-white" type="checkbox" name="remember" id="remember" />
+                <label htmlFor="remember" className="ml-2 text-xs">You&apos;re Remembered</label>
+              </div>
+              <a href="#" className="ml-auto text-xs">Forgot Password?</a>
+            </div>
+            <div className={"flex flex-row gap-x-4 mt-6 text-white text-xs items-center  " + r400.className}>
+              <button className={"bg-[#73ACC9] text-[#101D26] text-xs w-24 h-8 rounded-sm " + r300.className} type="submit">Login</button>
+              or
+              <a href="/apply" className={"flex bg-[#101D26] text-white text-xs w-24 h-8 rounded-sm text-center items-center justify-center " + r300.className}>Apply</a>
+            </div>
+          </div>
+          <div className="flex flex-col w-[55%]"></div>
+        </div> */}

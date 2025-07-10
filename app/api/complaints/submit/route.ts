@@ -25,9 +25,8 @@ export async function POST(req: NextRequest) {
 
     const client = await pool.connect();
 
-    const query = "INSERT INTO complaints (id, type, details, timestamp, status) VALUES ($1, $2, $3, NOW(), $4)";
-    const values = [complaintID, complaintType, additionalDetails, "pending"];
-    const result = await client.query(query, values);
+    const query = "INSERT INTO complaints (id, type, details, timestamp, status, user_id) VALUES ($1, $2, $3, NOW(), $4, $5)";
+    const values = [complaintID, complaintType, additionalDetails, "pending", null];
 
     if (req.cookies) {
         const cookies = parseCookie(req.cookies.toString());
@@ -35,10 +34,13 @@ export async function POST(req: NextRequest) {
         if (!cookies.get("userID")) return client.release(), NextResponse.json({ error: "Incorrect Data" }, { status: 401 });
 
         const userID = cookies.get("userID");
+        values[4] = decrypt(userID as string);
         const userQuery = "UPDATE users SET complaints = array_append(complaints, $1) WHERE id = $2";
         const userValues = [complaintID, parseInt(decrypt(userID as string))];
         const userResult = await client.query(userQuery, userValues);
     }
+
+    const result = await client.query(query, values);
 
     client.release()
 

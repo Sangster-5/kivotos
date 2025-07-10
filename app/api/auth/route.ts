@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const password = cookieStore.get('password');
     const userID = cookieStore.get('userID');
 
-    if (!email || !password || !userID) return client.release(), NextResponse.json({ error: "Invalid Cookie" }, { status: 400 });
+    if (!email || !password || !userID) return client.release(), NextResponse.json({ error: "Invalid Cookie1" }, { status: 400 });
 
     const values = [decrypt(email.value), decrypt(password.value), decrypt(userID.value)];
     const query = "SELECT * FROM users WHERE email = $1 AND password = $2 AND id = $3";
@@ -30,7 +30,6 @@ export async function POST(request: NextRequest) {
 
     if (result.rowCount === 0) {
       client.release(),
-
         deleteCookies(cookieStore);
 
       return NextResponse.json({ error: "Invalid Cookie" }, { status: 400 });

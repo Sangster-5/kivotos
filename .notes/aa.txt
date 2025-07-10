@@ -1,8 +1,6 @@
-Change complaint title
-Finish displaying references when reviewing applications
+-- Future --
+make tasks and requests expandable
+connect maintenance requests to unit
 
-Reports:
-(Ask about period for rent roll)
-- Rent Roll: Look at correct period (consider start and end date, check older leases)
-
-convert to gradient
+remove signed unsigned for leases
+add search for leases, name, unit, year
