@@ -35,12 +35,12 @@ const MaintenancePage = () => {
                         <div className="grid grid-cols-2 gap-x-4 gap-y-2">
                             <div className="grid col-span-2 md:col-span-1 grid-rows-2">
                                 <label htmlFor="name">Name</label>
-                                <input type="text" name="name" required className="bg-[#868374] rounded-md h-8" />
+                                <input type="text" name="name" required className="bg-[#868374] rounded-md h-8 p-2" />
                             </div>
 
                             <div className="grid col-span-2 md:col-span-1 grid-rows-2">
                                 <label htmlFor="unit">Unit</label>
-                                <input type="text" name="unit" className="bg-[#868374] rounded-md h-8" />
+                                <input type="text" name="unit" className="bg-[#868374] rounded-md h-8 p-2" />
                             </div>
                             <div className="grid col-span-2">
                                 <label htmlFor="description">Description</label>

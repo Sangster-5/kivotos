@@ -1,6 +1,0 @@
--- Future --
-make tasks and requests expandable
-connect maintenance requests to unit
-
-remove signed unsigned for leases
-add search for leases, name, unit, year
