@@ -8,7 +8,4 @@ add search for leases, name, unit, year
 -- Home --
 Investigate carousel bug with 4+ maintenance requests by user
 
--- Server --
-Create pull request shortcut
-
 -- Prod Build --
