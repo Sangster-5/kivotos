@@ -5,10 +5,6 @@ connect maintenance requests to unit
 remove signed unsigned for leases
 add search for leases, name, unit, year
 
--- Files --
-remove spaces from filenames for windows support
-Make 256 char limit on filenames
-
 -- Home --
 Investigate carousel bug with 4+ maintenance requests by user
 

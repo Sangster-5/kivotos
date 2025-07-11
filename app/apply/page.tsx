@@ -282,8 +282,8 @@ const RentalApplicationForm = () => {
             )}
 
             {showSuccess && (
-                <div className="bg-custom-gradient-1 h-full w-full">
-                    <h1>{successMessage}</h1>
+                <div className="bg-custom-gradient-1 h-full w-full p-8">
+                    <h1 className="text-white font-bold italic">{successMessage}</h1>
                 </div>
             )}
         </>

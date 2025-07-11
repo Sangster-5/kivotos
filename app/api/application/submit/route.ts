@@ -24,8 +24,9 @@ export async function POST(request: NextRequest) {
 
     const saveFilePromises = fileEntries.map(async ([fieldName, file]) => {
         const buffer = Buffer.from(await file.arrayBuffer());
-        files[fieldName as keyof typeof files] = `${userID}_${fieldName}_${file.name}`
-        const filePath = path.join(uploadDir, `${userID}_${fieldName}_${file.name}`);
+        const validFilename = file.name.replaceAll(" ", "_").slice(0, 250);
+        files[fieldName as keyof typeof files] = `${userID}_${fieldName}_${validFilename}`
+        const filePath = path.join(uploadDir, `${userID}_${fieldName}_${validFilename}`);
         await fs.writeFile(filePath, buffer);
     });
 
