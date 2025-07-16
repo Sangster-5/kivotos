@@ -68,9 +68,9 @@ const MaintenancePage = () => {
                     </form >
                 )}
                 {submitted && (
-                    <div className="grid grid-rows-2 gap-y-4 text-white">
-                        <p className="text-lg">Thank you for your request. We will get back to you shortly.</p>
-                        <a href="/" className="border-2 px-4 py-2 rounded-md">Go Home</a>
+                    <div className="flex flex-col justify-center items-center gap-y-4 text-white h-[85vh]">
+                        <p className="text-lg text-center italic font-bold">Thank you for your request. We will get back to you shortly.</p>
+                        <a href="/" className="border-2 px-4 py-2 rounded-md h-10 text-center w-fit">Go Home</a>
                     </div>
                 )}
             </div >

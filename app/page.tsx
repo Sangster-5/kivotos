@@ -64,7 +64,7 @@ const Home = () => {
   });
 
   return (
-    <div className="bg-custom-gradient-1 min-h-full w-full flex items-center justify-center">
+    <div className="bg-custom-gradient-1 min-h-full w-full flex items-center justify-center md:pb-5">
       {ranOnce ? (loggedIn && userDetails ? (
         <div className="p-8 md:px-20 md:py-14 md:mt-10 w-screen md:w-4/5 h-screen md:h-full bg-[#192F3D] rounded-md">
           <h1 className="flex flex-row text-2xl font-bold mb-2 text-white">Welcome, {userDetails.name}</h1>
@@ -82,7 +82,7 @@ const Home = () => {
           <div className="flex flex-row"><ActiveSubmissions /></div>
 
         </div>
-      ) : <VisitorLandingPage />) : (<h1 className={"text-white w-full h-full font-light text-2xl flex items-center justify-center"}>Loading...</h1>)}
+      ) : <VisitorLandingPage />) : (<h1 className={"text-white w-full h-full font-light text-xl flex items-center justify-center italic"}>Loading...</h1>)}
     </div >
   );
 }

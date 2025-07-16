@@ -9,3 +9,7 @@ add search for leases, name, unit, year
 Investigate carousel bug with 4+ maintenance requests by user
 
 -- Prod Build --
+
+-- Server --
+Create shortcut to backup/dump db
+Maybe extend with daily script

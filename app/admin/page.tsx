@@ -330,7 +330,7 @@ const AdminLoginForm = () => {
 
     return (
         <div className={((initialRender && !isLoggedIn) ? "bg-[#1c2932] md:bg-custom-gradient-1 h-full flex justify-center" : "min-h-[90vh] md:min-h-[85vh] bg-custom-gradient-1 md:px-20 px-0 flex flex-col items-center md:items-start md:justify-center")}>
-            {!initialRender && <h1 className='text-white w-full h-[85vh] text-lg grid items-center justify-center'>Loading...</h1>}
+            {!initialRender && <h1 className='text-white w-full h-[85vh] text-lg grid items-center justify-center italic'>Loading...</h1>}
             {
                 (initialRender && !isLoggedIn) && (
                     <>
