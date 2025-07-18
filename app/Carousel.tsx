@@ -75,7 +75,7 @@ const Carousel: React.FC<CarouselProps> = ({ tasks, taskSelectCallback, requests
             {tasks && tasks.length != 0 && (
                 <div className="relative w-full max-w-full mx-auto">
                     <div className="overflow-hidden w-[85vw] md:w-full" ref={emblaRef}>
-                        <div className="flex gap-x-4">
+                        <div className="flex">
                             {tasks.map((item) => (
                                 <div
                                     id={item.id.toString()}

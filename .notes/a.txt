@@ -1,9 +1,13 @@
 -- Future --
-make tasks and requests expandable
+* make tasks and requests expandable
+* Add dates for tasks
+
 connect maintenance requests to unit
 
 remove signed unsigned for leases
 add search for leases, name, unit, year
+
+What if exitsing tenant tries to apply for new lease?
 
 -- Prod Build --
 

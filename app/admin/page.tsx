@@ -1,6 +1,6 @@
 'use client';
 
-import { ChangeEvent, useEffect, useState } from 'react';
+import { ChangeEvent, useEffect, useState, useRef } from 'react';
 import { postRequest, getRequest } from '@/lib/fetch';
 import { Raleway, Poppins } from 'next/font/google';
 import '@/app/globals.css';
@@ -195,7 +195,8 @@ const AdminLoginForm = () => {
         switch (tabView) {
             case "tasks-tab":
                 if (event.currentTarget.parentElement) {
-                    const taskID = event.currentTarget.parentElement?.parentElement?.id;
+                    const taskID = event.currentTarget.parentElement?.parentElement?.parentElement?.id;
+                    console.log(taskID)
 
                     const category = event.currentTarget.parentElement.previousSibling?.previousSibling?.textContent
                     postRequest("/api/tasks/update", { taskID, value, type: "status", source: "task", category: category })
@@ -208,8 +209,8 @@ const AdminLoginForm = () => {
                 break;
 
             case "requests-tab":
-                if (event.currentTarget.parentElement?.parentElement) {
-                    const requestID = event.currentTarget.parentElement.parentElement.id;
+                if (event.currentTarget.parentElement?.parentElement?.parentElement) {
+                    const requestID = event.currentTarget.parentElement.parentElement.parentElement.id;
                     const previousSibling = event.currentTarget.previousSibling as HTMLButtonElement;
                     const data = { taskID: requestID, value, type: "status", source: "maintenance", isAlsoTask: false };
 
@@ -553,6 +554,7 @@ interface TasksProps {
 const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handleSelectChange, handleSubmitTask, handleEmployeeSearch, relevantEmployees, handleEmployeeAssignation, assignedEmployees, handleCreateTaskClick, createTaskView }) => {
     //States
     const [categoryFilter, setCategoriesFilter] = useState("all");
+    const addCategoryInputRef = useRef<HTMLInputElement>(null);
 
     //Effects
 
@@ -572,6 +574,9 @@ const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handl
             .then(data => {
                 if (data.error) return console.warn(data);
                 fetchCategories();
+                if (addCategoryInputRef.current) {
+                    addCategoryInputRef.current.value = "";
+                }
             })
     }
 
@@ -588,7 +593,7 @@ const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handl
                 <button onClick={handleCreateTaskClick} className={'bg-[#00AF5B] text-sm text-white w-32 h-8 rounded-md shadow-md ' + r600.className}>Create Task</button>
                 {/* <button>New Worker</button> */}
                 <form action={handleAddCategory} className="relative">
-                    <input type="text" name="createCategory" placeholder="New Category" className="bg-white h-8 w-64 px-8 rounded-lg shadow-md"></input>
+                    <input ref={addCategoryInputRef} type="text" name="createCategory" placeholder="New Category" className="bg-white h-8 w-64 px-8 rounded-lg shadow-md"></input>
                     <button className="absolute hover:cursor-pointer top-[15%] left-0 flex items-center pl-3">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
@@ -628,7 +633,7 @@ const Tasks: React.FC<TasksProps> = ({ tasks, categories, fetchCategories, handl
                     <div className="flex flex-row gap-x-2">
                         <div className="flex flex-col w-1/2">
                             <label htmlFor="title" className={r500.className}>Task Title</label>
-                            <input name="title" type="text" className='rounded-sm p-1' placeholder='Enter title' />
+                            <input name="title" type="text" className='rounded-sm p-1 text-black' placeholder='Enter title' />
                         </div>
                         <div className="flex flex-col w-1/2">
                             <label htmlFor="categorySelect" className={r500.className}>Select Category</label>
