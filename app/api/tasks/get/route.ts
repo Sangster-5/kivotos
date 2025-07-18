@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
     let tasks: Task[] = result.rows;
     const taskPromise = new Promise((resolve, reject) => {
         tasks.forEach((task, taskIndex) => {
+            if (task.assigned_employees.length == 0) resolve(true);
             task.assigned_employees.forEach(async (employee, index) => {
                 const employeeQuery = "SELECT * FROM admin WHERE id = $1";
                 const employeeValues = [employee];

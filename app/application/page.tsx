@@ -162,7 +162,7 @@ const ApplicationView: React.FC<ApplicationViewProps> = ({ applicationID }) => {
         } else {
             setInitialRender(true);
         }
-    });
+    }, [isLoggedIn]);
 
     const [application, setApplication] = useState<Application | undefined>(undefined);
 
