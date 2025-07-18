@@ -21,6 +21,7 @@
 /complaint-uploads/*
 !/complaint-uploads/.gitkeep
 /reports/*
+!/reports/.gitkeep
 
 # misc
 .DS_Store

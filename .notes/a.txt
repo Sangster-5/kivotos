@@ -7,7 +7,7 @@ connect maintenance requests to unit
 remove signed unsigned for leases
 add search for leases, name, unit, year
 
-What if exitsing tenant tries to apply for new lease?
+What if existing tenant tries to apply for new lease?
 
 should leases on rent roll only be active?
 
