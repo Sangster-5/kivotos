@@ -16,6 +16,10 @@
 # production
 /build
 /lib/db.ts
+/applicant-file-uploads/*
+!/applicant-file-uploads/.gitkeep
+/complaint-uploads/*
+!/complaint-uploads/.gitkeep
 
 # misc
 .DS_Store
