@@ -917,7 +917,7 @@ const MaintenanceRequests: React.FC<MaintenanceRequestProps> = ({ maintenanceReq
     const [taskData, setTaskData] = useState<Task | null>(null);
     const handleMaintenanceRequestToTask = (event: React.MouseEvent<HTMLButtonElement>) => {
         const id = event.currentTarget.id;
-        const request = event.currentTarget.parentElement;
+        const request = event.currentTarget.parentElement?.parentElement;
         const dateText = request?.children[4].textContent ?? "";
         const property = (request?.children[3].textContent ?? "") == "theArborVictorianLiving" ? "The Abor Victorian Living" : "Vitalia Courtyard Properties";
         const date = new Date(dateText);
