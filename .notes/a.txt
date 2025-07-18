@@ -9,6 +9,8 @@ add search for leases, name, unit, year
 
 What if exitsing tenant tries to apply for new lease?
 
+should leases on rent roll only be active?
+
 -- Prod Build --
 
 -- Server --

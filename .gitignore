@@ -20,6 +20,7 @@
 !/applicant-file-uploads/.gitkeep
 /complaint-uploads/*
 !/complaint-uploads/.gitkeep
+/reports/*
 
 # misc
 .DS_Store
