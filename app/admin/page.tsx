@@ -61,7 +61,7 @@ const AdminLoginForm = () => {
     const [maintenanceRequests, setMaintenanceRequests] = useState<MaintenanceRequest[]>([]);
     const [complaints, setComplaints] = useState<Complaint[]>([]);
     const [leases, setLeases] = useState<Lease[]>([]);
-    const [unitPropertyFilter, setUnitPropertyFilter] = useState("");
+    const [unitPropertyFilter, setUnitPropertyFilter] = useState("all");
     const [reportTypes, setReportTypes] = useState<string[]>([]);
 
 

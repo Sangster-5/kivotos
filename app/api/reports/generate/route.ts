@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
             break;
     }
 
-    workbook.xlsx.writeFile(path.join(process.cwd(), `reports/${report}_${data.property == "" ? "" : (data.property == "theArborVictorianLiving" ? "The Arbor Victorian Living" : "Vitalia Courtyard")}_${generateUserID()}.xlsx`)) //add properyty name 
+    workbook.xlsx.writeFile(path.join(process.cwd(), `reports/${report}_${data.property == "all" ? `${generateUserID()}.xlsx` : (data.property == "theArborVictorianLiving" ? "The_Arbor_Victorian_Living" : "Vitalia_Courtyard")}_${generateUserID()}.xlsx`)) //add property name 
         .then(() => {
             console.log('Workbook saved successfully.');
         })
